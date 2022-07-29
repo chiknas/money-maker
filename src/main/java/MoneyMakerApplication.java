@@ -9,6 +9,6 @@ public class MoneyMakerApplication {
         Injector injector = Guice.createInjector(new HttpClientModule(), new KrakenModule());
         KrakenClient krakenClient = injector.getInstance(KrakenClient.class);
 //        System.out.println(krakenClient.getTickerInfo("XBTGBP").get().getResult().get("XXBTZGBP").getAskArray());
-//        System.out.println(krakenClient.getBalance().get());
+        System.out.println(krakenClient.getBalance().get());
     }
 }
