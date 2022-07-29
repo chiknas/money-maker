@@ -17,11 +17,23 @@ public class Timeframe<T> {
 
     public LinkedList<Tick<T>> addTick(T value) {
         Tick<T> tick = new Tick<>(LocalDateTime.now(), value);
+        return addTick(tick);
+    }
+
+    public LinkedList<Tick<T>> addTick(Tick<T> tick) {
         if (timeFrame.remainingCapacity() == 0) {
             timeFrame.poll();
         }
         timeFrame.add(tick);
 
         return new LinkedList<>(timeFrame);
+    }
+
+    public LinkedList<Tick<T>> getTicks() {
+        return new LinkedList<>(timeFrame);
+    }
+
+    public int size() {
+        return getTicks().size();
     }
 }

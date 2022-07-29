@@ -3,6 +3,7 @@ import com.google.inject.Injector;
 import httpclients.HttpClientModule;
 import httpclients.kraken.KrakenClient;
 import httpclients.kraken.KrakenModule;
+import trading.indicators.MovingAverageIndicator;
 import trading.timeframe.Tick;
 import trading.timeframe.Timeframe;
 
@@ -22,10 +23,12 @@ public class MoneyMakerApplication {
 
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
         Timeframe<BigDecimal> timeframe = new Timeframe<>(5);
+        MovingAverageIndicator movingAverageIndicator = new MovingAverageIndicator(2);
         scheduler.scheduleAtFixedRate(() -> {
             String s = krakenClient.getTickerInfo("XBTGBP").get().getResult().get("XXBTZGBP").getAskArray().get(0);
-            LinkedList<Tick<BigDecimal>> timeFrame = timeframe.addTick(new BigDecimal(s));
-            System.out.println(timeFrame.stream().map(tick -> tick.getTime() + "  " + tick.getValue()).collect(Collectors.toList()));
+            LinkedList<Tick<BigDecimal>> timeFrameTicks = timeframe.addTick(new BigDecimal(s));
+            System.out.println("Prices:  " + timeFrameTicks.stream().map(tick -> tick.getTime().getSecond() + "  " + tick.getValue()).collect(Collectors.toList()));
+            System.out.println("Moving average:  " + movingAverageIndicator.apply(timeframe).getTicks().stream().map(tick -> tick.getTime().getSecond() + "  " + tick.getValue()).collect(Collectors.toList()));
         }, 2, 2, TimeUnit.SECONDS);
     }
 }
