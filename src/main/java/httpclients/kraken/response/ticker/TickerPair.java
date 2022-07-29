@@ -1,5 +1,6 @@
 package httpclients.kraken.response.ticker;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public class TickerPair {
@@ -13,7 +14,7 @@ public class TickerPair {
     private List<String> h;
     private String o;
 
-    public List<String> getAskArray() {
-        return this.a;
+    public BigDecimal getCurrentPrice() {
+        return new BigDecimal(this.c.get(0));
     }
 }

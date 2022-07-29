@@ -36,4 +36,8 @@ public class Timeframe<T> {
     public int size() {
         return getTicks().size();
     }
+
+    public boolean isFull() {
+        return timeFrame.remainingCapacity() == 0;
+    }
 }

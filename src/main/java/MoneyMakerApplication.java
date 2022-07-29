@@ -3,32 +3,45 @@ import com.google.inject.Injector;
 import httpclients.HttpClientModule;
 import httpclients.kraken.KrakenClient;
 import httpclients.kraken.KrakenModule;
-import trading.indicators.MovingAverageIndicator;
-import trading.timeframe.Tick;
+import trading.strategies.MovingAverageCrossoverStrategy;
 import trading.timeframe.Timeframe;
 
+import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.LinkedList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 public class MoneyMakerApplication {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException, InterruptedException {
+        new ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor();
+
         Injector injector = Guice.createInjector(new HttpClientModule(), new KrakenModule());
         KrakenClient krakenClient = injector.getInstance(KrakenClient.class);
-//        System.out.println(krakenClient.getTickerInfo("XBTGBP").get().getResult().get("XXBTZGBP").getAskArray());
-//        System.out.println(krakenClient.getBalance().get());
 
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-        Timeframe<BigDecimal> timeframe = new Timeframe<>(5);
-        MovingAverageIndicator movingAverageIndicator = new MovingAverageIndicator(2);
+        Timeframe<BigDecimal> timeframe = new Timeframe<>(200);
+        MovingAverageCrossoverStrategy movingAverageCrossoverStrategy = new MovingAverageCrossoverStrategy(50, 100);
+
+        /**
+         * Use this https://api.kraken.com/0/public/Trades?pair=XBTUSD
+         * to initialize the timeframe before starting
+         */
+
         scheduler.scheduleAtFixedRate(() -> {
-            String s = krakenClient.getTickerInfo("XBTGBP").get().getResult().get("XXBTZGBP").getAskArray().get(0);
-            LinkedList<Tick<BigDecimal>> timeFrameTicks = timeframe.addTick(new BigDecimal(s));
-            System.out.println("Prices:  " + timeFrameTicks.stream().map(tick -> tick.getTime().getSecond() + "  " + tick.getValue()).collect(Collectors.toList()));
-            System.out.println("Moving average:  " + movingAverageIndicator.apply(timeframe).getTicks().stream().map(tick -> tick.getTime().getSecond() + "  " + tick.getValue()).collect(Collectors.toList()));
-        }, 2, 2, TimeUnit.SECONDS);
+            BigDecimal currentPrice = krakenClient.getTickerInfo("XBTUSD").get().getResult().get("XXBTZUSD").getCurrentPrice();
+            boolean isPriceChanged = timeframe.getTicks().isEmpty() || !timeframe.getTicks().getLast().getValue().equals(currentPrice);
+            if (isPriceChanged) {
+                timeframe.addTick(currentPrice);
+                System.out.print("    Current price: " + currentPrice + "\n");
+
+                if (timeframe.isFull()) {
+                    System.out.println(movingAverageCrossoverStrategy.strategy().apply(timeframe));
+                } else {
+                    System.out.println("Preparing timeframe...");
+                }
+            }
+
+        }, 2, 1, TimeUnit.SECONDS);
     }
 }
