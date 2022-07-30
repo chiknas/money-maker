@@ -5,6 +5,7 @@ import httpclients.kraken.KrakenClient;
 import httpclients.kraken.KrakenModule;
 import httpclients.kraken.response.trades.TradeDetails;
 import httpclients.kraken.response.trades.TradesResponse;
+import lombok.extern.slf4j.Slf4j;
 import trading.strategies.MovingAverageCrossoverStrategy;
 import trading.timeframe.Tick;
 import trading.timeframe.Timeframe;
@@ -18,7 +19,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 public class MoneyMakerApplication {
+
     public static void main(String[] args) throws IOException, InterruptedException {
         int timeframeSize = 200;
         String assetCode = "XBTUSD";
@@ -49,12 +52,12 @@ public class MoneyMakerApplication {
             boolean isPriceChanged = timeframe.getTicks().isEmpty() || !timeframe.getTicks().getLast().getValue().equals(currentPrice);
             if (isPriceChanged) {
                 timeframe.addTick(currentPrice);
-                System.out.print("    Current price: " + currentPrice + "\n");
+                log.info("    Current price: " + currentPrice);
 
                 if (timeframe.isFull()) {
-                    System.out.println(movingAverageCrossoverStrategy.strategy().apply(timeframe));
+                    log.info(movingAverageCrossoverStrategy.strategy().apply(timeframe).toString());
                 } else {
-                    System.out.println("Preparing timeframe...");
+                    log.info("Preparing timeframe...");
                 }
             }
         }, 2, 1, TimeUnit.SECONDS);

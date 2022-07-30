@@ -2,25 +2,23 @@ package httpclients.kraken;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.MessageDigest;
 import java.util.Base64;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+@Slf4j
 public class KrakenAuthentication {
 
-    private final Logger logger;
     private final String apiPublicKey;
     private final String apiPrivateKey;
 
     @Inject
-    public KrakenAuthentication(@Named("ApiPublicKey") String apiPublicKey, @Named("ApiPrivateKey") String apiPrivateKey, Logger logger) {
+    public KrakenAuthentication(@Named("ApiPublicKey") String apiPublicKey, @Named("ApiPrivateKey") String apiPrivateKey) {
         this.apiPublicKey = apiPublicKey;
         this.apiPrivateKey = apiPrivateKey;
-        this.logger = logger;
     }
 
     protected String getApiSignature(String path, String nonce, String data, String secret) {
@@ -32,7 +30,7 @@ public class KrakenAuthentication {
             mac.update(path.getBytes());
             return new String(Base64.getEncoder().encode(mac.doFinal(md.digest())));
         } catch (Exception e) {
-            logger.log(Level.SEVERE, e.getMessage(), e);
+            log.error(e.getMessage(), e);
         }
         return "";
     }

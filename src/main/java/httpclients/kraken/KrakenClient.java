@@ -8,7 +8,6 @@ import httpclients.kraken.response.trades.TradesResponse;
 
 import java.net.http.HttpClient;
 import java.util.Optional;
-import java.util.logging.Logger;
 
 public class KrakenClient extends AbstractClient {
 
@@ -16,8 +15,8 @@ public class KrakenClient extends AbstractClient {
     private final KrakenAuthentication krakenAuthentication;
 
     @Inject
-    public KrakenClient(KrakenAuthentication krakenAuthentication, Logger logger, HttpClient httpClient, Gson gson) {
-        super(logger, httpClient, gson);
+    public KrakenClient(KrakenAuthentication krakenAuthentication, HttpClient httpClient, Gson gson) {
+        super(httpClient, gson);
         this.krakenAuthentication = krakenAuthentication;
     }
 

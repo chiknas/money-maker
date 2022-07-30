@@ -3,11 +3,8 @@ package httpclients.kraken;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.logging.Logger;
-
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
 
 class KrakenAuthenticationTest {
     KrakenAuthentication krakenAuthentication;
@@ -16,7 +13,7 @@ class KrakenAuthenticationTest {
 
     @BeforeEach
     public void setUp() {
-        krakenAuthentication = new KrakenAuthentication(publicKey, privateKey, mock(Logger.class));
+        krakenAuthentication = new KrakenAuthentication(publicKey, privateKey);
     }
 
     @Test

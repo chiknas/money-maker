@@ -1,6 +1,7 @@
 package httpclients;
 
 import com.google.gson.Gson;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.net.URI;
@@ -9,17 +10,14 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Optional;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+@Slf4j
 public abstract class AbstractClient {
 
-    private final Logger logger;
     private final HttpClient httpClient;
     private final Gson gson;
 
-    public AbstractClient(Logger logger, HttpClient httpClient, Gson gson) {
-        this.logger = logger;
+    public AbstractClient(HttpClient httpClient, Gson gson) {
         this.httpClient = httpClient;
         this.gson = gson;
     }
@@ -47,7 +45,7 @@ public abstract class AbstractClient {
                     .GET()
                     .build());
         } catch (Exception e) {
-            logger.log(Level.SEVERE, e.getMessage(), e);
+            log.error(e.getMessage(), e);
             return Optional.empty();
         }
     }
@@ -61,7 +59,7 @@ public abstract class AbstractClient {
                     .POST(HttpRequest.BodyPublishers.ofString(data))
                     .build());
         } catch (Exception e) {
-            logger.log(Level.SEVERE, e.getMessage(), e);
+            log.error(e.getMessage(), e);
             return Optional.empty();
         }
     }
@@ -81,7 +79,7 @@ public abstract class AbstractClient {
             String body = httpClient.send(request, HttpResponse.BodyHandlers.ofString()).body();
             return Optional.of(String.class.equals(responseType) ? responseType.cast(body) : gson.fromJson(body, responseType));
         } catch (IOException | InterruptedException e) {
-            logger.log(Level.SEVERE, e.getMessage(), e);
+            log.error(e.getMessage(), e);
             return Optional.empty();
         }
     }
