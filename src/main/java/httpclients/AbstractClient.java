@@ -16,10 +16,12 @@ public abstract class AbstractClient {
 
     private final Logger logger;
     private final HttpClient httpClient;
+    private final Gson gson;
 
-    public AbstractClient(Logger logger, HttpClient httpClient) {
+    public AbstractClient(Logger logger, HttpClient httpClient, Gson gson) {
         this.logger = logger;
         this.httpClient = httpClient;
+        this.gson = gson;
     }
 
     protected abstract String getURI();
@@ -77,7 +79,7 @@ public abstract class AbstractClient {
     public <T> Optional<T> send(HttpRequest request, Class<T> responseType) {
         try {
             String body = httpClient.send(request, HttpResponse.BodyHandlers.ofString()).body();
-            return Optional.of(String.class.equals(responseType) ? responseType.cast(body) : new Gson().fromJson(body, responseType));
+            return Optional.of(String.class.equals(responseType) ? responseType.cast(body) : gson.fromJson(body, responseType));
         } catch (IOException | InterruptedException e) {
             logger.log(Level.SEVERE, e.getMessage(), e);
             return Optional.empty();

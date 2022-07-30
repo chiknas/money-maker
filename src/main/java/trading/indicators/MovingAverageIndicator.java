@@ -4,6 +4,7 @@ import trading.timeframe.Tick;
 import trading.timeframe.Timeframe;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.LinkedList;
 import java.util.function.Function;
 
@@ -31,7 +32,7 @@ public class MovingAverageIndicator implements Function<Timeframe<BigDecimal>, T
     private Tick<BigDecimal> movingAverage(LinkedList<Tick<BigDecimal>> ticks) {
         BigDecimal value = ticks.stream().map(Tick::getValue)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
-                .divide(BigDecimal.valueOf(ticks.size()));
+                .divide(BigDecimal.valueOf(ticks.size()), 10, RoundingMode.HALF_EVEN);
         return new Tick<>(ticks.getLast().getTime(), value);
     }
 }
