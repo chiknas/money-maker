@@ -1,8 +1,9 @@
-package trading.strategies;
+package services.strategies;
 
-import trading.indicators.MovingAverageIndicator;
-import trading.timeframe.Tick;
-import trading.timeframe.Timeframe;
+import com.google.inject.Inject;
+import services.indicators.MovingAverageIndicator;
+import valueobjects.timeframe.Tick;
+import valueobjects.timeframe.Timeframe;
 
 import java.math.BigDecimal;
 import java.util.Iterator;
@@ -19,20 +20,22 @@ import java.util.function.Function;
  */
 public class MovingAverageCrossoverStrategy implements TradingStrategy {
 
-    private final MovingAverageIndicator shortMovingAverageIndicator;
-    private final MovingAverageIndicator longMovingAverageIndicator;
+    private Integer shortMovingAveragePeriod = 50;
+    private Integer longMovingAveragePeriod = 100;
 
-    public MovingAverageCrossoverStrategy(int shortPeriod, int longPeriod) {
-        this.shortMovingAverageIndicator = new MovingAverageIndicator(shortPeriod);
-        this.longMovingAverageIndicator = new MovingAverageIndicator(longPeriod);
+    private final MovingAverageIndicator movingAverageIndicator;
+
+    @Inject
+    public MovingAverageCrossoverStrategy(MovingAverageIndicator movingAverageIndicator) {
+        this.movingAverageIndicator = movingAverageIndicator;
     }
 
     @Override
     public Function<Timeframe<BigDecimal>, Optional<TradingSignal>> strategy() {
         return (timeframe) -> {
 
-            Timeframe<BigDecimal> shortMovingAverage = shortMovingAverageIndicator.apply(timeframe);
-            Timeframe<BigDecimal> longMovingAverage = longMovingAverageIndicator.apply(timeframe);
+            Timeframe<BigDecimal> shortMovingAverage = movingAverageIndicator.apply(timeframe, shortMovingAveragePeriod);
+            Timeframe<BigDecimal> longMovingAverage = movingAverageIndicator.apply(timeframe, longMovingAveragePeriod);
 
             Iterator<Tick<BigDecimal>> shortTickIterator = shortMovingAverage.getTicks().descendingIterator();
             BigDecimal currentShortMovingAverage = shortTickIterator.next().getValue();
@@ -42,10 +45,8 @@ public class MovingAverageCrossoverStrategy implements TradingStrategy {
             BigDecimal currentLongMovingAverage = longTickIterator.next().getValue();
             BigDecimal previousLongMovingAverage = longTickIterator.next().getValue();
 
-
             int currentMovingAverageSignum = currentShortMovingAverage.subtract(currentLongMovingAverage).signum();
             int previousMovingAverageSignum = previousShortMovingAverage.subtract(previousLongMovingAverage).signum();
-
 
             if (currentMovingAverageSignum != 0 && currentMovingAverageSignum != previousMovingAverageSignum) {
                 TradingSignal tradingSignal = currentMovingAverageSignum > 0 ? TradingSignal.BUY : TradingSignal.SELL;
@@ -54,5 +55,11 @@ public class MovingAverageCrossoverStrategy implements TradingStrategy {
 
             return Optional.empty();
         };
+    }
+
+    public Function<Timeframe<BigDecimal>, Optional<TradingSignal>> strategy(int shortPeriod, int longPeriod) {
+        shortMovingAveragePeriod = shortPeriod;
+        longMovingAveragePeriod = longPeriod;
+        return strategy();
     }
 }

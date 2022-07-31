@@ -1,6 +1,6 @@
-package trading.strategies;
+package services.strategies;
 
-import trading.timeframe.Timeframe;
+import valueobjects.timeframe.Timeframe;
 
 import java.math.BigDecimal;
 import java.util.Optional;

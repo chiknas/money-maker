@@ -26,7 +26,7 @@ public class Trades {
 
     public List<TradeDetails> getTradeDetails(String assetCode) {
         return assetsMap.get(assetCode).stream()
-                .map(details -> new TradeDetails((String) details.get(0), (String) details.get(1), (Double) details.get(2)))
+                .map(details -> new TradeDetails((String) details.get(4), (String) details.get(6), (Double) details.get(0)))
                 .collect(Collectors.toList());
     }
 }

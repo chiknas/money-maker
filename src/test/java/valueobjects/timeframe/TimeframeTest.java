@@ -1,4 +1,4 @@
-package trading.timeframe;
+package valueobjects.timeframe;
 
 import org.junit.jupiter.api.Test;
 

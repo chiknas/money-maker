@@ -1,7 +1,7 @@
-package trading.indicators;
+package services.indicators;
 
 import org.junit.jupiter.api.Test;
-import trading.timeframe.Timeframe;
+import valueobjects.timeframe.Timeframe;
 
 import java.math.BigDecimal;
 
@@ -18,8 +18,8 @@ class MovingAverageIndicatorTest {
         integerTimeframe.addTick(BigDecimal.valueOf(9));
         integerTimeframe.addTick(BigDecimal.valueOf(1));
 
-        MovingAverageIndicator movingAverageIndicator = new MovingAverageIndicator(2);
-        Timeframe<BigDecimal> movingAverageTimeFrame = movingAverageIndicator.apply(integerTimeframe);
+        MovingAverageIndicator movingAverageIndicator = new MovingAverageIndicator();
+        Timeframe<BigDecimal> movingAverageTimeFrame = movingAverageIndicator.apply(integerTimeframe, 2);
 
         assertEquals(5, movingAverageTimeFrame.size());
         // first item is averaged with itself so the average is itself

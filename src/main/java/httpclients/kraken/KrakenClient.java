@@ -38,8 +38,8 @@ public class KrakenClient extends AbstractClient {
         return postRequest(data, path, krakenAuthentication.getSecurityHeaders(path, nonce, data)).flatMap(super::send);
     }
 
-    // https://docs.kraken.com/rest/#tag/Market-Data/operation/getRecentTrades
-    public Optional<TradesResponse> getRecentTrades(String assetCode) {
-        return getRequest("/0/public/Trades?pair=" + assetCode).flatMap(request -> super.send(request, TradesResponse.class));
+    // https://docs.kraken.com/rest/#tag/Market-Data/operation/getOHLCData
+    public Optional<TradesResponse> getHistoricData(String assetCode) {
+        return getRequest("/0/public/OHLC?pair=" + assetCode).flatMap(request -> super.send(request, TradesResponse.class));
     }
 }

@@ -1,4 +1,4 @@
-package trading.timeframe;
+package valueobjects.timeframe;
 
 import java.time.LocalDateTime;
 import java.util.LinkedList;

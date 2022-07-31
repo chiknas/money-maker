@@ -1,23 +1,17 @@
-package trading.indicators;
+package services.indicators;
 
-import trading.timeframe.Tick;
-import trading.timeframe.Timeframe;
+import valueobjects.timeframe.Tick;
+import valueobjects.timeframe.Timeframe;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.LinkedList;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
-public class MovingAverageIndicator implements Function<Timeframe<BigDecimal>, Timeframe<BigDecimal>> {
-
-    private final int period;
-
-    public MovingAverageIndicator(int period) {
-        this.period = period;
-    }
+public class MovingAverageIndicator implements BiFunction<Timeframe<BigDecimal>, Integer, Timeframe<BigDecimal>> {
 
     @Override
-    public Timeframe<BigDecimal> apply(Timeframe<BigDecimal> timeframe) {
+    public Timeframe<BigDecimal> apply(Timeframe<BigDecimal> timeframe, Integer period) {
 
         LinkedList<Tick<BigDecimal>> ticks = timeframe.getTicks();
         Timeframe<BigDecimal> movingAverageTimeFrame = new Timeframe<>(timeframe.size());

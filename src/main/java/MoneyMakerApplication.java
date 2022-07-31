@@ -6,11 +6,10 @@ import httpclients.kraken.KrakenModule;
 import httpclients.kraken.response.trades.TradeDetails;
 import httpclients.kraken.response.trades.TradesResponse;
 import lombok.extern.slf4j.Slf4j;
-import trading.strategies.MovingAverageCrossoverStrategy;
-import trading.timeframe.Tick;
-import trading.timeframe.Timeframe;
+import services.strategies.MovingAverageCrossoverStrategy;
+import valueobjects.timeframe.Tick;
+import valueobjects.timeframe.Timeframe;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
@@ -18,48 +17,48 @@ import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class MoneyMakerApplication {
 
-    public static void main(String[] args) throws IOException, InterruptedException {
+    public static void main(String[] args) {
         int timeframeSize = 200;
         String assetCode = "XBTUSD";
         String assetDetailCode = "XXBTZUSD";
 
         Injector injector = Guice.createInjector(new HttpClientModule(), new KrakenModule());
         KrakenClient krakenClient = injector.getInstance(KrakenClient.class);
+        MovingAverageCrossoverStrategy movingAverageCrossoverStrategy = injector.getInstance(MovingAverageCrossoverStrategy.class);
 
         Timeframe<BigDecimal> timeframe = new Timeframe<>(timeframeSize);
 
         // initialize timeframe with previous trades
-        Optional<TradesResponse> tradesResponse = krakenClient.getRecentTrades(assetCode);
+        Optional<TradesResponse> tradesResponse = krakenClient.getHistoricData(assetCode);
         tradesResponse.ifPresent(response -> {
             List<TradeDetails> tradeDetails = response.getResult().getTradeDetails(assetDetailCode);
-            tradeDetails.subList(tradeDetails.size() - timeframeSize - 1, tradeDetails.size() - 1).stream()
-                    .sorted(Comparator.comparing(TradeDetails::getTime))
+            tradeDetails.stream().sorted(Comparator.comparing(TradeDetails::getTime))
+                    .collect(Collectors.toList())
                     .forEach(detail -> {
                         Tick<BigDecimal> ticker = new Tick<>(detail.getTime(), detail.getPrice());
                         timeframe.addTick(ticker);
                     });
         });
 
-
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-        MovingAverageCrossoverStrategy movingAverageCrossoverStrategy = new MovingAverageCrossoverStrategy(50, 100);
         scheduler.scheduleAtFixedRate(() -> {
             BigDecimal currentPrice = krakenClient.getTickerInfo(assetCode).get().getResult().get(assetDetailCode).getCurrentPrice();
             boolean isPriceChanged = timeframe.getTicks().isEmpty() || !timeframe.getTicks().getLast().getValue().equals(currentPrice);
             if (isPriceChanged) {
                 timeframe.addTick(currentPrice);
-                log.info("    Current price: " + currentPrice);
 
                 if (timeframe.isFull()) {
-                    log.info(movingAverageCrossoverStrategy.strategy().apply(timeframe).toString());
-                } else {
-                    log.info("Preparing timeframe...");
+                    movingAverageCrossoverStrategy.strategy(50, 100).apply(timeframe).ifPresent(strat -> {
+                        log.info("    Current price: " + currentPrice);
+                        log.info(strat.toString());
+                    });
                 }
             }
-        }, 2, 1, TimeUnit.SECONDS);
+        }, 2, 60, TimeUnit.SECONDS);
     }
 }
