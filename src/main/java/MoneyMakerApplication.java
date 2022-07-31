@@ -6,6 +6,7 @@ import httpclients.kraken.KrakenModule;
 import httpclients.kraken.response.trades.TradeDetails;
 import httpclients.kraken.response.trades.TradesResponse;
 import lombok.extern.slf4j.Slf4j;
+import services.BannerService;
 import services.strategies.MovingAverageCrossoverStrategy;
 import valueobjects.timeframe.Tick;
 import valueobjects.timeframe.Timeframe;
@@ -23,11 +24,13 @@ import java.util.stream.Collectors;
 public class MoneyMakerApplication {
 
     public static void main(String[] args) {
+
         int timeframeSize = 200;
         String assetCode = "XBTUSD";
         String assetDetailCode = "XXBTZUSD";
 
         Injector injector = Guice.createInjector(new HttpClientModule(), new KrakenModule());
+        injector.getInstance(BannerService.class).printBanner();
         KrakenClient krakenClient = injector.getInstance(KrakenClient.class);
         MovingAverageCrossoverStrategy movingAverageCrossoverStrategy = injector.getInstance(MovingAverageCrossoverStrategy.class);
 
