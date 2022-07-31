@@ -43,10 +43,11 @@
             <artifactId>logback-core</artifactId>
             <version>1.2.11</version>
         </dependency>
+
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>1.7.36</version>
+            <groupId>com.github.sh0nk</groupId>
+            <artifactId>matplotlib4j</artifactId>
+            <version>0.5.0</version>
         </dependency>
 
         <!--TEST-->
