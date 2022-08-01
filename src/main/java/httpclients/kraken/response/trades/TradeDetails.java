@@ -1,8 +1,9 @@
 package httpclients.kraken.response.trades;
 
+import services.TimeService;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 
 public class TradeDetails {
     private final String price;
@@ -24,7 +25,6 @@ public class TradeDetails {
     }
 
     public LocalDateTime getTime() {
-        return LocalDateTime.ofEpochSecond(
-                time.longValue(), 0, ZoneOffset.UTC);
+        return TimeService.getLocalDateTimeSecond(time);
     }
 }

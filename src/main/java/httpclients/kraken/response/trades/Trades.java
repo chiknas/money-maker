@@ -1,8 +1,8 @@
 package httpclients.kraken.response.trades;
 
-import java.time.Instant;
+import services.TimeService;
+
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -18,10 +18,7 @@ public class Trades {
 
     // Api returns the last trade timestamp in nano seconds
     public LocalDateTime getLast() {
-        long seconds = Long.parseLong(last) / 1_000_000_000;
-        long nanos = Long.parseLong(last) % 1_000_000_000;
-
-        return Instant.ofEpochSecond(seconds, nanos).atZone(ZoneId.systemDefault()).toLocalDateTime();
+        return TimeService.getLocalDateTimeNano(last);
     }
 
     public List<TradeDetails> getTradeDetails(String assetCode) {
