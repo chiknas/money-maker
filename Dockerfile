@@ -1,7 +1,7 @@
 #
 # Build stage
 #
-FROM maven:3.8.6-jdk-11-slim as BUILD
+FROM maven:3.8.6 as BUILD
 COPY src /home/app/src
 COPY pom.xml /home/app
 RUN mvn -f /home/app/pom.xml clean package
