@@ -4,8 +4,7 @@ import org.alfasoftware.morf.upgrade.adapt.TableSetSchema;
 
 import java.util.List;
 
-import static org.alfasoftware.morf.metadata.DataType.BIG_INTEGER;
-import static org.alfasoftware.morf.metadata.DataType.STRING;
+import static org.alfasoftware.morf.metadata.DataType.*;
 import static org.alfasoftware.morf.metadata.SchemaUtils.column;
 import static org.alfasoftware.morf.metadata.SchemaUtils.table;
 import static org.alfasoftware.morf.upgrade.db.DatabaseUpgradeTableContribution.deployedViewsTable;
@@ -19,13 +18,14 @@ public class MoneyMakerDatabaseSchema extends TableSetSchema {
         super(List.of(
                         deployedViewsTable(),
                         upgradeAuditTable(),
-                        table("Test1").columns(
+                        table("trade_transaction").columns(
                                 column("id", BIG_INTEGER).autoNumbered(1),
-                                column("val", STRING, 100)
-                        ),
-                        table("Test2").columns(
-                                column("id", BIG_INTEGER).autoNumbered(1),
-                                column("val", STRING, 100)
+                                column("asset_code", STRING, 10),
+                                column("type", STRING, 10),
+                                column("price", DECIMAL, 100),
+                                column("cost", DECIMAL, 100),
+                                // LocalDateTime timestamp
+                                column("time", BIG_INTEGER, 19)
                         )
                 )
         );
