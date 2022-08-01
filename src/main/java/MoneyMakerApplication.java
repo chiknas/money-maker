@@ -1,5 +1,6 @@
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import database.DatabaseModule;
 import httpclients.HttpClientModule;
 import httpclients.kraken.KrakenClient;
 import httpclients.kraken.KrakenModule;
@@ -29,8 +30,9 @@ public class MoneyMakerApplication {
         String assetCode = "XBTUSD";
         String assetDetailCode = "XXBTZUSD";
 
-        Injector injector = Guice.createInjector(new HttpClientModule(), new KrakenModule());
-        injector.getInstance(BannerService.class).printBanner();
+        new BannerService().printBanner();
+
+        Injector injector = Guice.createInjector(new HttpClientModule(), new KrakenModule(), new DatabaseModule());
         KrakenClient krakenClient = injector.getInstance(KrakenClient.class);
         MovingAverageCrossoverStrategy movingAverageCrossoverStrategy = injector.getInstance(MovingAverageCrossoverStrategy.class);
 
