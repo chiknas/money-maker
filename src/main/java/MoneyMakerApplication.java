@@ -9,6 +9,7 @@ import httpclients.kraken.response.trades.TradesResponse;
 import lombok.extern.slf4j.Slf4j;
 import services.BannerService;
 import services.strategies.MovingAverageCrossoverStrategy;
+import services.trades.TradeService;
 import valueobjects.timeframe.Tick;
 import valueobjects.timeframe.Timeframe;
 
@@ -27,13 +28,14 @@ public class MoneyMakerApplication {
     public static void main(String[] args) {
 
         int timeframeSize = 200;
-        String assetCode = "XBTUSD";
-        String assetDetailCode = "XXBTZUSD";
+        String assetCode = "XBTGBP";
+        String assetDetailCode = "XXBTZGBP";
 
         new BannerService().printBanner();
 
         Injector injector = Guice.createInjector(new HttpClientModule(), new KrakenModule(), new DatabaseModule());
         KrakenClient krakenClient = injector.getInstance(KrakenClient.class);
+        TradeService tradeService = injector.getInstance(TradeService.class);
         MovingAverageCrossoverStrategy movingAverageCrossoverStrategy = injector.getInstance(MovingAverageCrossoverStrategy.class);
 
         Timeframe<BigDecimal> timeframe = new Timeframe<>(timeframeSize);
@@ -49,6 +51,7 @@ public class MoneyMakerApplication {
                         timeframe.addTick(ticker);
                     });
         });
+        log.info("Initialized trading timeframe.");
 
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
         scheduler.scheduleAtFixedRate(() -> {
@@ -59,11 +62,11 @@ public class MoneyMakerApplication {
 
                 if (timeframe.isFull()) {
                     movingAverageCrossoverStrategy.strategy(50, 100).apply(timeframe).ifPresent(strat -> {
-                        log.info("    Current price: " + currentPrice);
-                        log.info(strat.toString());
+                        tradeService.trade(assetCode, timeframe.getTicks().getLast(), strat);
                     });
                 }
             }
         }, 2, 60, TimeUnit.SECONDS);
+        log.info("Trading session started! Looking for a good ticker to trade: " + assetCode);
     }
 }
