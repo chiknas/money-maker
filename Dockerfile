@@ -9,6 +9,7 @@ RUN mvn -f /home/app/pom.xml clean package
 #
 # Package stage
 #
+#FROM arm32v7/openjdk
 FROM amazoncorretto:11
 COPY --from=build /home/app/target/money-maker-1.0-SNAPSHOT-jar-with-dependencies.jar /usr/local/lib/money-maker.jar
 ENTRYPOINT ["java","-jar","/usr/local/lib/money-maker.jar"]
