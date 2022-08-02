@@ -54,19 +54,18 @@ public class MoneyMakerApplication {
         log.info("Initialized trading timeframe.");
 
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-        scheduler.scheduleAtFixedRate(() -> {
-            BigDecimal currentPrice = krakenClient.getTickerInfo(assetCode).get().getResult().get(assetDetailCode).getCurrentPrice();
+        scheduler.scheduleAtFixedRate(() -> krakenClient.getTickerInfo(assetCode).ifPresent(tickerPairResponse -> {
+            BigDecimal currentPrice = tickerPairResponse.getResult().get(assetDetailCode).getCurrentPrice();
             boolean isPriceChanged = timeframe.getTicks().isEmpty() || !timeframe.getTicks().getLast().getValue().equals(currentPrice);
             if (isPriceChanged) {
                 timeframe.addTick(currentPrice);
 
                 if (timeframe.isFull()) {
-                    movingAverageCrossoverStrategy.strategy(50, 100).apply(timeframe).ifPresent(strat -> {
-                        tradeService.trade(assetCode, timeframe.getTicks().getLast(), strat);
-                    });
+                    movingAverageCrossoverStrategy.strategy(50, 100).apply(timeframe)
+                            .ifPresent(strat -> tradeService.trade(assetCode, timeframe.getTicks().getLast(), strat));
                 }
             }
-        }, 2, 60, TimeUnit.SECONDS);
+        }), 2, 60, TimeUnit.SECONDS);
         log.info("Trading session started! Looking for a good ticker to trade: " + assetCode);
     }
 }
