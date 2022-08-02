@@ -15,5 +15,7 @@ public interface TradingStrategy {
         BUY, SELL;
     }
 
+    String name();
+
     Function<Timeframe<BigDecimal>, Optional<TradingSignal>> strategy();
 }

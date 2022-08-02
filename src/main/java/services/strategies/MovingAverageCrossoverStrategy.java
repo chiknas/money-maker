@@ -31,6 +31,11 @@ public class MovingAverageCrossoverStrategy implements TradingStrategy {
     }
 
     @Override
+    public String name() {
+        return "MOVING_AVERAGE_CROSSOVER";
+    }
+
+    @Override
     public Function<Timeframe<BigDecimal>, Optional<TradingSignal>> strategy() {
         return (timeframe) -> {
 
