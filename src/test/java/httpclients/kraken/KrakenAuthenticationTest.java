@@ -3,8 +3,7 @@ package httpclients.kraken;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 class KrakenAuthenticationTest {
     KrakenAuthentication krakenAuthentication;
@@ -52,6 +51,10 @@ class KrakenAuthenticationTest {
     void getNonce() {
         // The Kraken nonce is an incremental number (goes up every time we fire a request)
         // So in this impl we are using the system time in millis.
-        assertEquals(String.valueOf(System.currentTimeMillis()), krakenAuthentication.getNonce());
+        long nonce = Long.parseLong(krakenAuthentication.getNonce());
+        long currentMillis = System.currentTimeMillis();
+
+        // test the 2 numbers are close. Give it a 100ms buffer in case it runs on a slow system
+        assertTrue(Math.abs(nonce - currentMillis) < 100);
     }
 }
