@@ -41,3 +41,6 @@ buildNumber.properties
 
 # Environment files
 .env*
+
+# Docker files
+database/
