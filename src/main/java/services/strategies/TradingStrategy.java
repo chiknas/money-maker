@@ -3,6 +3,7 @@ package services.strategies;
 import valueobjects.timeframe.Timeframe;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -16,6 +17,8 @@ public interface TradingStrategy {
     }
 
     String name();
+
+    Duration periodLength();
 
     Function<Timeframe<BigDecimal>, Optional<TradingSignal>> strategy();
 }

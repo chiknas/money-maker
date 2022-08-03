@@ -1,6 +1,9 @@
 package services.strategies;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import properties.GoldenCrossStrategyProperties;
+import properties.PropertiesService;
 import services.indicators.MovingAverageIndicator;
 import services.strategies.TradingStrategy.TradingSignal;
 import valueobjects.timeframe.Tick;
@@ -13,8 +16,20 @@ import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-class MovingAverageCrossoverStrategyTest {
+class GoldenCrossStrategyTest {
+
+    PropertiesService propertiesService;
+
+    @BeforeEach
+    void setUp() {
+        propertiesService = mock(PropertiesService.class);
+        when(propertiesService.loadProperties(eq(GoldenCrossStrategyProperties.class)))
+                .thenReturn(Optional.of(new GoldenCrossStrategyProperties("PT10S", 2, 5)));
+    }
 
     @Test
     void sellSignal() {
@@ -32,7 +47,7 @@ class MovingAverageCrossoverStrategyTest {
         sellSignalTimeFrame.addTick(new Tick<>(startTime.plusSeconds(80), BigDecimal.valueOf(18)));
         sellSignalTimeFrame.addTick(new Tick<>(startTime.plusSeconds(90), BigDecimal.valueOf(5)));
 
-        Function<Timeframe<BigDecimal>, Optional<TradingSignal>> strategy = new MovingAverageCrossoverStrategy(new MovingAverageIndicator()).strategy(2, 5);
+        Function<Timeframe<BigDecimal>, Optional<TradingSignal>> strategy = new GoldenCrossStrategy(propertiesService, new MovingAverageIndicator()).strategy();
         Optional<TradingSignal> buySignal = strategy.apply(sellSignalTimeFrame);
 
         assertTrue(buySignal.isPresent());
@@ -55,7 +70,7 @@ class MovingAverageCrossoverStrategyTest {
         buySignalTimeFrame.addTick(new Tick<>(startTime.plusSeconds(80), BigDecimal.valueOf(4)));
         buySignalTimeFrame.addTick(new Tick<>(startTime.plusSeconds(90), BigDecimal.valueOf(18)));
 
-        Function<Timeframe<BigDecimal>, Optional<TradingSignal>> strategy = new MovingAverageCrossoverStrategy(new MovingAverageIndicator()).strategy(2, 5);
+        Function<Timeframe<BigDecimal>, Optional<TradingSignal>> strategy = new GoldenCrossStrategy(propertiesService, new MovingAverageIndicator()).strategy();
         Optional<TradingSignal> buySignal = strategy.apply(buySignalTimeFrame);
 
         assertTrue(buySignal.isPresent());
@@ -78,7 +93,7 @@ class MovingAverageCrossoverStrategyTest {
         buySignalTimeFrame.addTick(new Tick<>(startTime.plusSeconds(80), BigDecimal.valueOf(4)));
         buySignalTimeFrame.addTick(new Tick<>(startTime.plusSeconds(90), BigDecimal.valueOf(2)));
 
-        Function<Timeframe<BigDecimal>, Optional<TradingSignal>> strategy = new MovingAverageCrossoverStrategy(new MovingAverageIndicator()).strategy(2, 5);
+        Function<Timeframe<BigDecimal>, Optional<TradingSignal>> strategy = new GoldenCrossStrategy(propertiesService, new MovingAverageIndicator()).strategy();
         Optional<TradingSignal> buySignal = strategy.apply(buySignalTimeFrame);
 
         assertTrue(buySignal.isEmpty());

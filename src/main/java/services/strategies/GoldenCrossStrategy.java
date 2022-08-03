@@ -1,11 +1,14 @@
 package services.strategies;
 
 import com.google.inject.Inject;
+import properties.GoldenCrossStrategyProperties;
+import properties.PropertiesService;
 import services.indicators.MovingAverageIndicator;
 import valueobjects.timeframe.Tick;
 import valueobjects.timeframe.Timeframe;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.function.Function;
@@ -18,26 +21,36 @@ import java.util.function.Function;
  *
  * <a href="https://www.investopedia.com/articles/active-trading/052014/how-use-moving-average-buy-stocks.asp">Moving average stock trading</a>
  */
-public class MovingAverageCrossoverStrategy implements TradingStrategy {
+public class GoldenCrossStrategy implements TradingStrategy {
 
-    private Integer shortMovingAveragePeriod = 50;
-    private Integer longMovingAveragePeriod = 100;
-
+    private final PropertiesService propertiesService;
     private final MovingAverageIndicator movingAverageIndicator;
 
     @Inject
-    public MovingAverageCrossoverStrategy(MovingAverageIndicator movingAverageIndicator) {
+    public GoldenCrossStrategy(PropertiesService propertiesService, MovingAverageIndicator movingAverageIndicator) {
+        this.propertiesService = propertiesService;
         this.movingAverageIndicator = movingAverageIndicator;
     }
 
     @Override
     public String name() {
-        return "MOVING_AVERAGE_CROSSOVER";
+        return "GoldenCross";
+    }
+
+    @Override
+    public Duration periodLength() {
+        return propertiesService.loadProperties(GoldenCrossStrategyProperties.class)
+                .map(GoldenCrossStrategyProperties::getPeriodLength)
+                .orElse(Duration.ofSeconds(1));
     }
 
     @Override
     public Function<Timeframe<BigDecimal>, Optional<TradingSignal>> strategy() {
         return (timeframe) -> {
+
+            Optional<GoldenCrossStrategyProperties> goldenCrossStrategyProperties = propertiesService.loadProperties(GoldenCrossStrategyProperties.class);
+            Integer shortMovingAveragePeriod = goldenCrossStrategyProperties.map(GoldenCrossStrategyProperties::getShortPeriod).orElse(50);
+            Integer longMovingAveragePeriod = goldenCrossStrategyProperties.map(GoldenCrossStrategyProperties::getLongPeriod).orElse(100);
 
             Timeframe<BigDecimal> shortMovingAverage = movingAverageIndicator.apply(timeframe, shortMovingAveragePeriod);
             Timeframe<BigDecimal> longMovingAverage = movingAverageIndicator.apply(timeframe, longMovingAveragePeriod);
@@ -60,11 +73,5 @@ public class MovingAverageCrossoverStrategy implements TradingStrategy {
 
             return Optional.empty();
         };
-    }
-
-    public Function<Timeframe<BigDecimal>, Optional<TradingSignal>> strategy(int shortPeriod, int longPeriod) {
-        shortMovingAveragePeriod = shortPeriod;
-        longMovingAveragePeriod = longPeriod;
-        return strategy();
     }
 }

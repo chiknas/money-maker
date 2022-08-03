@@ -7,6 +7,7 @@ import httpclients.kraken.response.ticker.TickerPairResponse;
 import httpclients.kraken.response.trades.TradesResponse;
 
 import java.net.http.HttpClient;
+import java.time.Duration;
 import java.util.Optional;
 
 public class KrakenClient extends AbstractClient {
@@ -40,6 +41,14 @@ public class KrakenClient extends AbstractClient {
 
     // https://docs.kraken.com/rest/#tag/Market-Data/operation/getOHLCData
     public Optional<TradesResponse> getHistoricData(String assetCode) {
-        return getRequest("/0/public/OHLC?pair=" + assetCode).flatMap(request -> super.send(request, TradesResponse.class));
+        return getHistoricData(assetCode, null);
+    }
+
+    public Optional<TradesResponse> getHistoricData(String assetCode, Duration period) {
+        String intervalParam = Optional.ofNullable(period)
+                .map(periodDuration -> "&interval=" + (periodDuration.toMinutes() > 0 ? periodDuration.toMinutes() : "1"))
+                .orElse("");
+        String requestUrl = "/0/public/OHLC?pair=" + assetCode + intervalParam;
+        return getRequest(requestUrl).flatMap(request -> super.send(request, TradesResponse.class));
     }
 }
