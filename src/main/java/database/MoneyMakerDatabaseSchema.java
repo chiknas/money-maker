@@ -24,6 +24,8 @@ public class MoneyMakerDatabaseSchema extends TableSetSchema {
                                 column("type", STRING, 10),
                                 column("price", DECIMAL, 100),
                                 column("cost", DECIMAL, 100),
+                                // strategy name that executed this trade
+                                column("strategy", STRING, 100),
                                 // LocalDateTime timestamp
                                 column("time", BIG_INTEGER, 19)
                         )

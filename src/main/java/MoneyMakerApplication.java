@@ -1,6 +1,7 @@
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import database.DatabaseModule;
+import entities.TradeTransaction;
 import httpclients.HttpClientModule;
 import httpclients.kraken.KrakenClient;
 import httpclients.kraken.KrakenModule;
@@ -14,6 +15,7 @@ import valueobjects.timeframe.Tick;
 import valueobjects.timeframe.Timeframe;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -62,7 +64,16 @@ public class MoneyMakerApplication {
 
                 if (timeframe.isFull()) {
                     goldenCrossStrategy.strategy().apply(timeframe)
-                            .ifPresent(strat -> tradeService.trade(assetCode, timeframe.getTicks().getLast(), strat));
+                            .ifPresent(strat -> {
+                                TradeTransaction tradeTransaction = new TradeTransaction();
+                                tradeTransaction.setType(strat);
+                                tradeTransaction.setPrice(currentPrice);
+                                tradeTransaction.setStrategy(goldenCrossStrategy.name());
+                                tradeTransaction.setTime(LocalDateTime.now());
+                                tradeTransaction.setAssetCode(assetCode);
+                                tradeTransaction.setCost(BigDecimal.ZERO);
+                                tradeService.trade(tradeTransaction);
+                            });
                 }
             }
         }), 2, goldenCrossStrategy.periodLength().getSeconds(), TimeUnit.SECONDS);

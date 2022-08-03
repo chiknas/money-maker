@@ -24,25 +24,29 @@ public class TradeTransaction {
     @Column(name = "id", unique = true, nullable = false)
     private BigInteger id;
 
+    // the strategy algorithm used to execute these trade
+    @Column(name = "strategy")
+    private String strategy;
+
     // the trade pair code ex. BTCUSD
-    @Column(name = "asset_code", nullable = false)
+    @Column(name = "asset_code")
     private String assetCode;
 
     // the type of trade (BUY or SELL)
     @Enumerated(EnumType.STRING)
-    @Column(name = "type", nullable = false)
+    @Column(name = "type")
     private TradingStrategy.TradingSignal type;
 
     // the price of the pair we traded on
-    @Column(name = "price", nullable = false)
+    @Column(name = "price")
     private BigDecimal price;
 
     // the cost this trade occurred to the account balance
-    @Column(name = "cost", nullable = false)
+    @Column(name = "cost")
     private BigDecimal cost;
 
     // the specific time this trade occurred
-    @Column(name = "time", nullable = false)
+    @Column(name = "time")
     private BigInteger time;
 
     public LocalDateTime getTime() {
