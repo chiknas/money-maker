@@ -9,7 +9,7 @@ import httpclients.kraken.response.trades.TradeDetails;
 import httpclients.kraken.response.trades.TradesResponse;
 import lombok.extern.slf4j.Slf4j;
 import services.BannerService;
-import services.strategies.GoldenCrossStrategy;
+import services.strategies.ThreeEmaCrossoverStrategy;
 import services.trades.TradeService;
 import valueobjects.timeframe.Tick;
 import valueobjects.timeframe.Timeframe;
@@ -38,12 +38,12 @@ public class MoneyMakerApplication {
         Injector injector = Guice.createInjector(new HttpClientModule(), new KrakenModule(), new DatabaseModule());
         KrakenClient krakenClient = injector.getInstance(KrakenClient.class);
         TradeService tradeService = injector.getInstance(TradeService.class);
-        GoldenCrossStrategy goldenCrossStrategy = injector.getInstance(GoldenCrossStrategy.class);
+        ThreeEmaCrossoverStrategy strategy = injector.getInstance(ThreeEmaCrossoverStrategy.class);
 
         Timeframe timeframe = new Timeframe(timeframeSize);
 
         // initialize timeframe with previous trades
-        Optional<TradesResponse> tradesResponse = krakenClient.getHistoricData(assetCode, goldenCrossStrategy.periodLength());
+        Optional<TradesResponse> tradesResponse = krakenClient.getHistoricData(assetCode, strategy.periodLength());
         tradesResponse.ifPresent(response -> {
             List<TradeDetails> tradeDetails = response.getResult().getTradeDetails(assetDetailCode);
             tradeDetails.stream().sorted(Comparator.comparing(TradeDetails::getTime))
@@ -63,12 +63,12 @@ public class MoneyMakerApplication {
                 timeframe.addTick(currentPrice);
 
                 if (timeframe.isFull()) {
-                    goldenCrossStrategy.strategy().apply(timeframe)
+                    strategy.strategy().apply(timeframe)
                             .ifPresent(strat -> {
                                 TradeTransaction tradeTransaction = new TradeTransaction();
                                 tradeTransaction.setType(strat);
                                 tradeTransaction.setPrice(currentPrice);
-                                tradeTransaction.setStrategy(goldenCrossStrategy.name());
+                                tradeTransaction.setStrategy(strategy.name());
                                 tradeTransaction.setTime(LocalDateTime.now());
                                 tradeTransaction.setAssetCode(assetCode);
                                 tradeTransaction.setCost(BigDecimal.ZERO);
@@ -76,7 +76,7 @@ public class MoneyMakerApplication {
                             });
                 }
             }
-        }), 2, goldenCrossStrategy.periodLength().getSeconds(), TimeUnit.SECONDS);
+        }), 2, strategy.periodLength().getSeconds(), TimeUnit.SECONDS);
         log.info("Trading session started! Looking for a good ticker to trade: " + assetCode);
     }
 }
