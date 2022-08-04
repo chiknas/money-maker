@@ -40,7 +40,7 @@ public class MoneyMakerApplication {
         TradeService tradeService = injector.getInstance(TradeService.class);
         GoldenCrossStrategy goldenCrossStrategy = injector.getInstance(GoldenCrossStrategy.class);
 
-        Timeframe<BigDecimal> timeframe = new Timeframe<>(timeframeSize);
+        Timeframe timeframe = new Timeframe(timeframeSize);
 
         // initialize timeframe with previous trades
         Optional<TradesResponse> tradesResponse = krakenClient.getHistoricData(assetCode, goldenCrossStrategy.periodLength());
@@ -49,7 +49,7 @@ public class MoneyMakerApplication {
             tradeDetails.stream().sorted(Comparator.comparing(TradeDetails::getTime))
                     .collect(Collectors.toList())
                     .forEach(detail -> {
-                        Tick<BigDecimal> ticker = new Tick<>(detail.getTime(), detail.getPrice());
+                        Tick ticker = new Tick(detail.getTime(), detail.getPrice());
                         timeframe.addTick(ticker);
                     });
         });

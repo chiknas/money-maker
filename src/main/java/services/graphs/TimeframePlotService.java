@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class TimeframePlotService {
 
-    public <T extends Number> void plot(Map<String, Timeframe<T>> timeFrames) {
+    public <T extends Number> void plot(Map<String, Timeframe> timeFrames) {
         Plot plt = Plot.create();
 
         timeFrames.forEach((key, timeframe) -> {

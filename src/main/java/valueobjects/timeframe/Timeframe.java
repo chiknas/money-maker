@@ -1,6 +1,8 @@
 package valueobjects.timeframe;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.concurrent.LinkedBlockingDeque;
 
@@ -8,19 +10,19 @@ import java.util.concurrent.LinkedBlockingDeque;
  * Keeps track of the specified object information over time. It holds a specified amount of ticks.
  * When a new ticker is inserted the oldest one is removed.
  */
-public class Timeframe<T> {
-    private final LinkedBlockingDeque<Tick<T>> timeFrame;
+public class Timeframe {
+    private final LinkedBlockingDeque<Tick> timeFrame;
 
     public Timeframe(int ticksLimits) {
         timeFrame = new LinkedBlockingDeque<>(ticksLimits);
     }
 
-    public LinkedList<Tick<T>> addTick(T value) {
-        Tick<T> tick = new Tick<>(LocalDateTime.now(), value);
+    public LinkedList<Tick> addTick(BigDecimal value) {
+        Tick tick = new Tick(LocalDateTime.now(), value);
         return addTick(tick);
     }
 
-    public LinkedList<Tick<T>> addTick(Tick<T> tick) {
+    public LinkedList<Tick> addTick(Tick tick) {
         if (timeFrame.remainingCapacity() == 0) {
             timeFrame.poll();
         }
@@ -29,7 +31,7 @@ public class Timeframe<T> {
         return new LinkedList<>(timeFrame);
     }
 
-    public LinkedList<Tick<T>> getTicks() {
+    public LinkedList<Tick> getTicks() {
         return new LinkedList<>(timeFrame);
     }
 
@@ -39,5 +41,26 @@ public class Timeframe<T> {
 
     public boolean isFull() {
         return timeFrame.remainingCapacity() == 0;
+    }
+
+    public int crossover(Timeframe timeframe) {
+        // Last 2 prices of the current timeframe
+        Iterator<Tick> aTickIterator = this.getTicks().descendingIterator();
+        BigDecimal currentA = aTickIterator.next().getValue();
+        BigDecimal previousA = aTickIterator.next().getValue();
+
+        // Last 2 prices of the specified timeframe
+        Iterator<Tick> bTickIterator = timeframe.getTicks().descendingIterator();
+        BigDecimal currentB = bTickIterator.next().getValue();
+        BigDecimal previousB = bTickIterator.next().getValue();
+
+        int currentSignum = currentA.subtract(currentB).signum();
+        int previousSignum = previousA.subtract(previousB).signum();
+
+        if (currentSignum != previousSignum) {
+            return currentSignum;
+        }
+
+        return 0;
     }
 }

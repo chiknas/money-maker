@@ -11,14 +11,14 @@ class ExponentialMovingAverageIndicatorTest {
 
     @Test
     void apply() {
-        Timeframe<BigDecimal> integerTimeframe = new Timeframe<>(4);
+        Timeframe integerTimeframe = new Timeframe(4);
         integerTimeframe.addTick(BigDecimal.valueOf(10));
         integerTimeframe.addTick(BigDecimal.valueOf(11));
         integerTimeframe.addTick(BigDecimal.valueOf(12));
         integerTimeframe.addTick(BigDecimal.valueOf(13));
 
         ExponentialMovingAverageIndicator exponentialMovingAverageIndicator = new ExponentialMovingAverageIndicator();
-        Timeframe<BigDecimal> movingAverageTimeFrame = exponentialMovingAverageIndicator.apply(integerTimeframe, 3);
+        Timeframe movingAverageTimeFrame = exponentialMovingAverageIndicator.apply(integerTimeframe, 3);
 
         assertEquals(4, movingAverageTimeFrame.size());
         // Smoothing Factor (SF) = 2 / (3+1) = 0.5

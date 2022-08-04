@@ -15,36 +15,36 @@ import java.util.function.BiFunction;
  *
  * <a href="https://nullbeans.com/how-to-calculate-the-exponential-moving-average-ema/">EMA explanation</a>
  */
-public class ExponentialMovingAverageIndicator implements BiFunction<Timeframe<BigDecimal>, Integer, Timeframe<BigDecimal>> {
+public class ExponentialMovingAverageIndicator implements BiFunction<Timeframe, Integer, Timeframe> {
     @Override
-    public Timeframe<BigDecimal> apply(Timeframe<BigDecimal> timeframe, Integer period) {
+    public Timeframe apply(Timeframe timeframe, Integer period) {
         // Smoothing Factor = 2 / (Number of time periods + 1)
         BigDecimal smoothingFactor = BigDecimal.valueOf(2)
                 .divide(
                         BigDecimal.valueOf(period)
                                 .add(BigDecimal.ONE), 10, RoundingMode.HALF_EVEN);
 
-        LinkedList<Tick<BigDecimal>> ticks = timeframe.getTicks();
-        Timeframe<BigDecimal> movingAverageTimeFrame = new Timeframe<>(timeframe.size());
+        LinkedList<Tick> ticks = timeframe.getTicks();
+        Timeframe movingAverageTimeFrame = new Timeframe(timeframe.size());
         for (int i = 0; i < ticks.size(); i++) {
             int startingIndex = i < period ? 0 : (i + 1 - period);
-            LinkedList<Tick<BigDecimal>> periodTicks = new LinkedList<>(ticks.subList(startingIndex, i + 1));
+            LinkedList<Tick> periodTicks = new LinkedList<>(ticks.subList(startingIndex, i + 1));
             movingAverageTimeFrame.addTick(exponentialMovingAverage(periodTicks, smoothingFactor));
         }
         return movingAverageTimeFrame;
     }
 
-    private Tick<BigDecimal> exponentialMovingAverage(LinkedList<Tick<BigDecimal>> ticks, BigDecimal smoothingFactor) {
+    private Tick exponentialMovingAverage(LinkedList<Tick> ticks, BigDecimal smoothingFactor) {
         if (ticks.size() == 1) {
             return ticks.getFirst();
         }
 
-        LinkedList<Tick<BigDecimal>> previousTimeframe = new LinkedList<>(ticks.subList(0, ticks.size() - 1));
-        Tick<BigDecimal> previousEma = exponentialMovingAverage(previousTimeframe, smoothingFactor);
+        LinkedList<Tick> previousTimeframe = new LinkedList<>(ticks.subList(0, ticks.size() - 1));
+        Tick previousEma = exponentialMovingAverage(previousTimeframe, smoothingFactor);
         BigDecimal ema = (ticks.getLast().getValue().multiply(smoothingFactor)).add(
                 BigDecimal.ONE.subtract(smoothingFactor).multiply(previousEma.getValue())
         );
-        return new Tick<>(ticks.getLast().getTime(), ema);
+        return new Tick(ticks.getLast().getTime(), ema);
     }
 
 

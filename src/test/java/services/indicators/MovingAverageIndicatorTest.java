@@ -11,7 +11,7 @@ class MovingAverageIndicatorTest {
 
     @Test
     void apply() {
-        Timeframe<BigDecimal> integerTimeframe = new Timeframe<>(5);
+        Timeframe integerTimeframe = new Timeframe(5);
         integerTimeframe.addTick(BigDecimal.valueOf(2));
         integerTimeframe.addTick(BigDecimal.valueOf(4));
         integerTimeframe.addTick(BigDecimal.valueOf(8));
@@ -19,7 +19,7 @@ class MovingAverageIndicatorTest {
         integerTimeframe.addTick(BigDecimal.valueOf(1));
 
         MovingAverageIndicator movingAverageIndicator = new MovingAverageIndicator();
-        Timeframe<BigDecimal> movingAverageTimeFrame = movingAverageIndicator.apply(integerTimeframe, 2);
+        Timeframe movingAverageTimeFrame = movingAverageIndicator.apply(integerTimeframe, 2);
 
         assertEquals(5, movingAverageTimeFrame.size());
         // first item is averaged with itself so the average is itself

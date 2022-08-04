@@ -4,12 +4,9 @@ import com.google.inject.Inject;
 import properties.GoldenCrossStrategyProperties;
 import properties.PropertiesService;
 import services.indicators.MovingAverageIndicator;
-import valueobjects.timeframe.Tick;
 import valueobjects.timeframe.Timeframe;
 
-import java.math.BigDecimal;
 import java.time.Duration;
-import java.util.Iterator;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -45,29 +42,19 @@ public class GoldenCrossStrategy implements TradingStrategy {
     }
 
     @Override
-    public Function<Timeframe<BigDecimal>, Optional<TradingSignal>> strategy() {
+    public Function<Timeframe, Optional<TradingSignal>> strategy() {
         return (timeframe) -> {
 
             Optional<GoldenCrossStrategyProperties> goldenCrossStrategyProperties = propertiesService.loadProperties(GoldenCrossStrategyProperties.class);
             Integer shortMovingAveragePeriod = goldenCrossStrategyProperties.map(GoldenCrossStrategyProperties::getShortPeriod).orElse(50);
             Integer longMovingAveragePeriod = goldenCrossStrategyProperties.map(GoldenCrossStrategyProperties::getLongPeriod).orElse(100);
 
-            Timeframe<BigDecimal> shortMovingAverage = movingAverageIndicator.apply(timeframe, shortMovingAveragePeriod);
-            Timeframe<BigDecimal> longMovingAverage = movingAverageIndicator.apply(timeframe, longMovingAveragePeriod);
+            Timeframe shortMovingAverage = movingAverageIndicator.apply(timeframe, shortMovingAveragePeriod);
+            Timeframe longMovingAverage = movingAverageIndicator.apply(timeframe, longMovingAveragePeriod);
 
-            Iterator<Tick<BigDecimal>> shortTickIterator = shortMovingAverage.getTicks().descendingIterator();
-            BigDecimal currentShortMovingAverage = shortTickIterator.next().getValue();
-            BigDecimal previousShortMovingAverage = shortTickIterator.next().getValue();
-
-            Iterator<Tick<BigDecimal>> longTickIterator = longMovingAverage.getTicks().descendingIterator();
-            BigDecimal currentLongMovingAverage = longTickIterator.next().getValue();
-            BigDecimal previousLongMovingAverage = longTickIterator.next().getValue();
-
-            int currentMovingAverageSignum = currentShortMovingAverage.subtract(currentLongMovingAverage).signum();
-            int previousMovingAverageSignum = previousShortMovingAverage.subtract(previousLongMovingAverage).signum();
-
-            if (currentMovingAverageSignum != 0 && currentMovingAverageSignum != previousMovingAverageSignum) {
-                TradingSignal tradingSignal = currentMovingAverageSignum > 0 ? TradingSignal.BUY : TradingSignal.SELL;
+            int crossover = shortMovingAverage.crossover(longMovingAverage);
+            if (crossover != 0) {
+                TradingSignal tradingSignal = crossover > 0 ? TradingSignal.BUY : TradingSignal.SELL;
                 return Optional.of(tradingSignal);
             }
 
