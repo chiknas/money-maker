@@ -8,6 +8,7 @@ import services.strategies.TradingStrategy;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Duration;
 import java.time.LocalDateTime;
 
 /**
@@ -49,11 +50,23 @@ public class TradeTransaction {
     @Column(name = "time")
     private BigInteger time;
 
+    // the period time length for each candlestick
+    @Column(name = "period_length")
+    private String periodLength;
+
     public LocalDateTime getTime() {
         return TimeService.getLocalDateTimeNano(String.valueOf(time));
     }
 
     public void setTime(LocalDateTime time) {
         this.time = BigInteger.valueOf(TimeService.getMilliSeconds(time));
+    }
+
+    public Duration getPeriodLength() {
+        return Duration.parse(periodLength);
+    }
+
+    public void setPeriodLength(Duration periodLength) {
+        this.periodLength = periodLength.toString();
     }
 }

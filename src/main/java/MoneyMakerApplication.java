@@ -46,48 +46,61 @@ public class MoneyMakerApplication {
 
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
+        // Pick up only the trading strategies that are enabled
+        List<TradingStrategy> enabledTradingStrategies = loadServices(TradingStrategy.class, injector).stream()
+                .filter(TradingStrategy::enabled).collect(Collectors.toList());
+
         // initialize each strategy
-        loadServices(TradingStrategy.class, injector).stream()
-                .filter(TradingStrategy::enabled)
-                .forEach(strategy -> {
-                    Timeframe timeframe = new Timeframe(timeframeSize);
+        enabledTradingStrategies.forEach(tradingStrategy -> {
+            Timeframe timeframe = new Timeframe(timeframeSize);
 
-                    // initialize timeframe with previous trades
-                    Optional<TradesResponse> tradesResponse = krakenClient.getHistoricData(assetCode, strategy.periodLength());
-                    tradesResponse.ifPresent(response -> {
-                        List<TradeDetails> tradeDetails = response.getResult().getTradeDetails(assetDetailCode);
-                        tradeDetails.stream().sorted(Comparator.comparing(TradeDetails::getTime))
-                                .collect(Collectors.toList())
-                                .forEach(detail -> {
-                                    Tick ticker = new Tick(detail.getTime(), detail.getPrice());
-                                    timeframe.addTick(ticker);
+            // initialize timeframe with previous trades
+            Optional<TradesResponse> tradesResponse = krakenClient.getHistoricData(assetCode, tradingStrategy.periodLength());
+            tradesResponse.ifPresent(response -> {
+                List<TradeDetails> tradeDetails = response.getResult().getTradeDetails(assetDetailCode);
+                tradeDetails.stream().sorted(Comparator.comparing(TradeDetails::getTime))
+                        .collect(Collectors.toList())
+                        .forEach(detail -> {
+                            Tick ticker = new Tick(detail.getTime(), detail.getPrice());
+                            timeframe.addTick(ticker);
+                        });
+            });
+            log.info(tradingStrategy.name() + ": Initialized trading timeframe.");
+
+            // scheduler to run the strategy on the specified period
+            scheduler.scheduleAtFixedRate(() -> krakenClient.getTickerInfo(assetCode).ifPresent(tickerPairResponse -> {
+
+                BigDecimal currentPrice = tickerPairResponse.getResult().get(assetDetailCode).getCurrentPrice();
+                boolean isPriceChanged = timeframe.getTicks().isEmpty() || !timeframe.getTicks().getLast().getValue().equals(currentPrice);
+
+                // only run the strategy on price change. no point running it for the same price twice.
+                if (isPriceChanged) {
+                    timeframe.addTick(currentPrice);
+
+                    // only run when the timeframe we are interesting in is full with prices.
+                    if (timeframe.isFull()) {
+                        tradingStrategy.strategy().apply(timeframe)
+                                // react to the specified trading signal
+                                .ifPresent(signal -> {
+                                    TradeTransaction tradeTransaction = new TradeTransaction();
+                                    tradeTransaction.setType(signal);
+                                    tradeTransaction.setPrice(currentPrice);
+                                    tradeTransaction.setStrategy(tradingStrategy.name());
+                                    tradeTransaction.setTime(LocalDateTime.now());
+                                    tradeTransaction.setAssetCode(assetCode);
+                                    tradeTransaction.setCost(BigDecimal.ZERO);
+                                    tradeTransaction.setPeriodLength(tradingStrategy.periodLength());
+                                    tradeService.trade(tradeTransaction);
                                 });
-                    });
-                    log.info(strategy.name() + ": Initialized trading timeframe.");
+                    }
+                }
+            }), 2, tradingStrategy.periodLength().getSeconds(), TimeUnit.SECONDS);
+            log.info(tradingStrategy.name() + ": Trading session started! Looking for a good ticker to trade: " + assetCode);
+        });
 
-                    scheduler.scheduleAtFixedRate(() -> krakenClient.getTickerInfo(assetCode).ifPresent(tickerPairResponse -> {
-                        BigDecimal currentPrice = tickerPairResponse.getResult().get(assetDetailCode).getCurrentPrice();
-                        boolean isPriceChanged = timeframe.getTicks().isEmpty() || !timeframe.getTicks().getLast().getValue().equals(currentPrice);
-                        if (isPriceChanged) {
-                            timeframe.addTick(currentPrice);
-
-                            if (timeframe.isFull()) {
-                                strategy.strategy().apply(timeframe)
-                                        .ifPresent(signal -> {
-                                            TradeTransaction tradeTransaction = new TradeTransaction();
-                                            tradeTransaction.setType(signal);
-                                            tradeTransaction.setPrice(currentPrice);
-                                            tradeTransaction.setStrategy(strategy.name());
-                                            tradeTransaction.setTime(LocalDateTime.now());
-                                            tradeTransaction.setAssetCode(assetCode);
-                                            tradeTransaction.setCost(BigDecimal.ZERO);
-                                            tradeService.trade(tradeTransaction);
-                                        });
-                            }
-                        }
-                    }), 2, strategy.periodLength().getSeconds(), TimeUnit.SECONDS);
-                    log.info(strategy.name() + ": Trading session started! Looking for a good ticker to trade: " + assetCode);
-                });
+        if (enabledTradingStrategies.isEmpty()) {
+            log.error("No trading strategies found enabled. You can enable strategies in the application.properties. See ya!");
+        }
     }
 
     public static <T> Set<T> loadServices(Class<T> type, Injector injector) {

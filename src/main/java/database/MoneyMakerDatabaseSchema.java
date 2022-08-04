@@ -27,7 +27,9 @@ public class MoneyMakerDatabaseSchema extends TableSetSchema {
                                 // strategy name that executed this trade
                                 column("strategy", STRING, 100),
                                 // LocalDateTime timestamp
-                                column("time", BIG_INTEGER, 19)
+                                column("time", BIG_INTEGER, 19),
+                                // the period time length for each candlestick
+                                column("period_length", STRING, 19)
                         )
                 )
         );
