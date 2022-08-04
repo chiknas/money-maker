@@ -2,8 +2,10 @@ package valueobjects.timeframe;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.LinkedBlockingDeque;
 
 /**
@@ -15,6 +17,11 @@ public class Timeframe {
 
     public Timeframe(int ticksLimits) {
         timeFrame = new LinkedBlockingDeque<>(ticksLimits);
+    }
+
+    public Timeframe(int ticksLimits, Collection<Tick> values) {
+        timeFrame = new LinkedBlockingDeque<>(ticksLimits);
+        timeFrame.addAll(values);
     }
 
     public LinkedList<Tick> addTick(BigDecimal value) {
@@ -41,6 +48,11 @@ public class Timeframe {
 
     public boolean isFull() {
         return timeFrame.remainingCapacity() == 0;
+    }
+
+    public Timeframe subframe(int index) {
+        List<Tick> subTicks = this.getTicks().subList(0, index);
+        return new Timeframe(subTicks.size(), subTicks);
     }
 
     public int crossover(Timeframe timeframe) {

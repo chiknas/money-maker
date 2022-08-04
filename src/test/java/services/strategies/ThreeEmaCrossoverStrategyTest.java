@@ -97,10 +97,8 @@ class ThreeEmaCrossoverStrategyTest {
 
         Optional<TradingStrategy.TradingSignal> tradingSignal = threeEmaCrossoverStrategy.strategy().apply(prices);
 
-        // Short ema crossed the medium ema which was already above the long. now they are parallel and in the
-        // right order with a crossover. BUY
-        assertTrue(tradingSignal.isPresent());
-        assertEquals(TradingStrategy.TradingSignal.BUY, tradingSignal.get());
+        // Short ema crossed the medium ema. we shouldnt react to that.
+        assertTrue(tradingSignal.isEmpty());
     }
 
     @Test

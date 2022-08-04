@@ -27,8 +27,7 @@ public class ExponentialMovingAverageIndicator implements BiFunction<Timeframe, 
         LinkedList<Tick> ticks = timeframe.getTicks();
         Timeframe movingAverageTimeFrame = new Timeframe(timeframe.size());
         for (int i = 0; i < ticks.size(); i++) {
-            int startingIndex = i < period ? 0 : (i + 1 - period);
-            LinkedList<Tick> periodTicks = new LinkedList<>(ticks.subList(startingIndex, i + 1));
+            LinkedList<Tick> periodTicks = new LinkedList<>(ticks.subList(0, i + 1));
             movingAverageTimeFrame.addTick(exponentialMovingAverage(periodTicks, smoothingFactor));
         }
         return movingAverageTimeFrame;

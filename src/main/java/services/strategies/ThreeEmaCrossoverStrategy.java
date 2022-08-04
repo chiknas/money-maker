@@ -65,12 +65,11 @@ public class ThreeEmaCrossoverStrategy implements TradingStrategy {
             // Check for any kind of crossover between them
             int shortCrossover = shortEma.crossover(longEma);
             int mediumCrossover = mediumEma.crossover(longEma);
-            int shortMediumCrossover = shortEma.crossover(mediumEma);
 
             // On a crossover check if the 3 EMAs are going in the same direction and in the correct order
             // (short is highest and long is lowest)
             // In this scenario trigger a signal based on the direction the graph is moving.
-            if (shortCrossover != 0 || mediumCrossover != 0 || shortMediumCrossover != 0) {
+            if (shortCrossover != 0 || mediumCrossover != 0) {
                 return getOrderEmaDirection(shortEma, mediumEma, longEma)
                         .map(direction -> direction > 0 ? TradingSignal.BUY : TradingSignal.SELL);
             }
