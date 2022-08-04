@@ -30,6 +30,13 @@ public class ThreeEmaCrossoverStrategy implements TradingStrategy {
     }
 
     @Override
+    public boolean enabled() {
+        return propertiesService.loadProperties(ThreeEmaCrossoverStrategyProperties.class)
+                .map(ThreeEmaCrossoverStrategyProperties::getEnabled)
+                .orElse(false);
+    }
+
+    @Override
     public String name() {
         return "3EmaCrossover";
     }

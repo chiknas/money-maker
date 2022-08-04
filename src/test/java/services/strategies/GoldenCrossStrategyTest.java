@@ -28,7 +28,7 @@ class GoldenCrossStrategyTest {
     void setUp() {
         propertiesService = mock(PropertiesService.class);
         when(propertiesService.loadProperties(eq(GoldenCrossStrategyProperties.class)))
-                .thenReturn(Optional.of(new GoldenCrossStrategyProperties("PT10S", 2, 5)));
+                .thenReturn(Optional.of(new GoldenCrossStrategyProperties("PT10S", 2, 5, true)));
     }
 
     @Test

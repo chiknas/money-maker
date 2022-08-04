@@ -15,6 +15,8 @@ public interface TradingStrategy {
         BUY, SELL;
     }
 
+    boolean enabled();
+
     String name();
 
     Duration periodLength();

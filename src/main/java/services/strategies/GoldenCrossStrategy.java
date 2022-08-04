@@ -30,6 +30,13 @@ public class GoldenCrossStrategy implements TradingStrategy {
     }
 
     @Override
+    public boolean enabled() {
+        return propertiesService.loadProperties(GoldenCrossStrategyProperties.class)
+                .map(GoldenCrossStrategyProperties::getEnabled)
+                .orElse(false);
+    }
+
+    @Override
     public String name() {
         return "GoldenCross";
     }
