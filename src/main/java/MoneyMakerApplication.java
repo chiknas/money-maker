@@ -4,7 +4,10 @@ import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.google.inject.util.Types;
 import database.DatabaseModule;
-import entities.TradeTransaction;
+import entities.ExitStrategyEntity;
+import entities.TradeEntity;
+import entities.TradeOrderEntity;
+import entities.TradeOrderStatus;
 import httpclients.HttpClientModule;
 import httpclients.kraken.KrakenClient;
 import httpclients.kraken.KrakenModule;
@@ -20,10 +23,7 @@ import valueobjects.timeframe.Timeframe;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -82,15 +82,30 @@ public class MoneyMakerApplication {
                         tradingStrategy.strategy().apply(timeframe)
                                 // react to the specified trading signal
                                 .ifPresent(signal -> {
-                                    TradeTransaction tradeTransaction = new TradeTransaction();
-                                    tradeTransaction.setType(signal);
-                                    tradeTransaction.setPrice(currentPrice);
-                                    tradeTransaction.setStrategy(tradingStrategy.name());
-                                    tradeTransaction.setTime(LocalDateTime.now());
-                                    tradeTransaction.setAssetCode(assetCode);
-                                    tradeTransaction.setCost(BigDecimal.ZERO);
-                                    tradeTransaction.setPeriodLength(tradingStrategy.periodLength());
-                                    tradeService.trade(tradeTransaction);
+
+                                    ExitStrategyEntity exitStrategy = new ExitStrategyEntity();
+                                    exitStrategy.setExitPrice(BigDecimal.TEN);
+                                    exitStrategy.setName("Trailing");
+                                    exitStrategy.setCurrentPrice(BigDecimal.ZERO);
+                                    exitStrategy.setLastUpdate(LocalDateTime.now());
+
+                                    TradeOrderEntity entryOrder = new TradeOrderEntity();
+                                    entryOrder.setOrderReference(UUID.randomUUID().toString());
+                                    entryOrder.setType(signal);
+                                    entryOrder.setPrice(currentPrice);
+                                    entryOrder.setVolume(BigDecimal.TEN);
+                                    entryOrder.setTime(LocalDateTime.now());
+                                    entryOrder.setStatus(TradeOrderStatus.PENDING);
+                                    entryOrder.setAssetCode(assetCode);
+                                    entryOrder.setCost(BigDecimal.ZERO);
+
+                                    TradeEntity trade = new TradeEntity();
+                                    trade.setEntryStrategy(tradingStrategy.name());
+                                    trade.setPeriodLength(tradingStrategy.periodLength());
+                                    trade.setExitStrategy(exitStrategy);
+                                    trade.setEntryOrder(entryOrder);
+
+                                    tradeService.trade(trade);
                                 });
                     }
                 }

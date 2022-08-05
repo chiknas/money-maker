@@ -8,7 +8,6 @@ import services.strategies.TradingStrategy;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.time.Duration;
 import java.time.LocalDateTime;
 
 /**
@@ -17,17 +16,17 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @Setter
-@Table(name = "trade_transaction")
-public class TradeTransaction {
+@Table(name = "trade_order")
+public class TradeOrderEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", unique = true, nullable = false)
     private BigInteger id;
 
-    // the strategy algorithm used to execute these trade
-    @Column(name = "strategy")
-    private String strategy;
+    // unique id returned by the api for this order
+    @Column(name = "order_reference")
+    private String orderReference;
 
     // the trade pair code ex. BTCUSD
     @Column(name = "asset_code")
@@ -37,6 +36,15 @@ public class TradeTransaction {
     @Enumerated(EnumType.STRING)
     @Column(name = "type")
     private TradingStrategy.TradingSignal type;
+
+    // if the order has been fulfilled or pending
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    private TradeOrderStatus status;
+
+    // how much of the asset we order
+    @Column(name = "volume")
+    private BigDecimal volume;
 
     // the price of the pair we traded on
     @Column(name = "price")
@@ -50,23 +58,11 @@ public class TradeTransaction {
     @Column(name = "time")
     private BigInteger time;
 
-    // the period time length for each candlestick
-    @Column(name = "period_length")
-    private String periodLength;
-
     public LocalDateTime getTime() {
         return TimeService.getLocalDateTimeNano(String.valueOf(time));
     }
 
     public void setTime(LocalDateTime time) {
         this.time = BigInteger.valueOf(TimeService.getMilliSeconds(time));
-    }
-
-    public Duration getPeriodLength() {
-        return Duration.parse(periodLength);
-    }
-
-    public void setPeriodLength(Duration periodLength) {
-        this.periodLength = periodLength.toString();
     }
 }

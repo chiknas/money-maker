@@ -1,7 +1,10 @@
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import database.DatabaseModule;
-import entities.TradeTransaction;
+import entities.ExitStrategyEntity;
+import entities.TradeEntity;
+import entities.TradeOrderEntity;
+import entities.TradeOrderStatus;
 import httpclients.HttpClientModule;
 import httpclients.kraken.KrakenClient;
 import httpclients.kraken.KrakenModule;
@@ -16,9 +19,11 @@ import valueobjects.timeframe.Tick;
 import valueobjects.timeframe.Timeframe;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -61,15 +66,30 @@ public class StrategyTesterApplication {
             strategy.strategy().apply(subframe)
                     // react to the specified trading signal
                     .ifPresent(signal -> {
-                        TradeTransaction tradeTransaction = new TradeTransaction();
-                        tradeTransaction.setType(signal);
-                        tradeTransaction.setPrice(subframe.getTicks().getLast().getValue());
-                        tradeTransaction.setStrategy(strategy.name());
-                        tradeTransaction.setTime(subframe.getTicks().getLast().getTime());
-                        tradeTransaction.setAssetCode(assetCode);
-                        tradeTransaction.setCost(BigDecimal.ZERO);
-                        tradeTransaction.setPeriodLength(strategy.periodLength());
-                        tradeService.trade(tradeTransaction);
+
+                        ExitStrategyEntity exitStrategy = new ExitStrategyEntity();
+                        exitStrategy.setExitPrice(BigDecimal.TEN);
+                        exitStrategy.setName("Trailing");
+                        exitStrategy.setCurrentPrice(BigDecimal.ZERO);
+                        exitStrategy.setLastUpdate(LocalDateTime.now());
+
+                        TradeOrderEntity entryOrder = new TradeOrderEntity();
+                        entryOrder.setOrderReference(UUID.randomUUID().toString());
+                        entryOrder.setType(signal);
+                        entryOrder.setPrice(BigDecimal.TEN);
+                        entryOrder.setStatus(TradeOrderStatus.PENDING);
+                        entryOrder.setVolume(BigDecimal.TEN);
+                        entryOrder.setTime(LocalDateTime.now());
+                        entryOrder.setAssetCode(assetCode);
+                        entryOrder.setCost(BigDecimal.ZERO);
+
+                        TradeEntity trade = new TradeEntity();
+                        trade.setEntryStrategy(strategy.name());
+                        trade.setPeriodLength(strategy.periodLength());
+                        trade.setExitStrategy(exitStrategy);
+                        trade.setEntryOrder(entryOrder);
+
+                        tradeService.trade(trade);
                     });
         }
     }

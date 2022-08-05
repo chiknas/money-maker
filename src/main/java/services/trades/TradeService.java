@@ -1,22 +1,22 @@
 package services.trades;
 
 import com.google.inject.Inject;
-import daos.TradeTransactionsDao;
-import entities.TradeTransaction;
+import daos.TradeDao;
+import entities.TradeEntity;
 
 /**
  * Service responsible to execute and manage trades in the system.
  */
 public class TradeService {
 
-    private final TradeTransactionsDao transactionsDao;
+    private final TradeDao transactionsDao;
 
     @Inject
-    public TradeService(TradeTransactionsDao transactionsDao) {
+    public TradeService(TradeDao transactionsDao) {
         this.transactionsDao = transactionsDao;
     }
 
-    public void trade(TradeTransaction tradeTransaction) {
-        transactionsDao.save(tradeTransaction);
+    public void trade(TradeEntity trade) {
+        transactionsDao.save(trade);
     }
 }
