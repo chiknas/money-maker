@@ -44,3 +44,6 @@ buildNumber.properties
 
 # Docker files
 database/
+
+# Mock data files
+*.csv

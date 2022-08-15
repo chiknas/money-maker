@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
  * Goes through the specified timeframe from historic data from the api and saves trades it would execute in a live env.
  */
 @Slf4j
-public class StrategyTesterApplication {
+public class StrategyTesterCurrentDataApplication {
 
     public static void main(String[] args) {
         int timeframeSize = 250;
