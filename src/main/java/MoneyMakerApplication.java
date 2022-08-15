@@ -4,7 +4,6 @@ import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.google.inject.util.Types;
 import database.DatabaseModule;
-import entities.ExitStrategyEntity;
 import entities.TradeEntity;
 import entities.TradeOrderEntity;
 import entities.TradeOrderStatus;
@@ -16,7 +15,8 @@ import httpclients.kraken.response.trades.TradesResponse;
 import lombok.extern.slf4j.Slf4j;
 import services.BannerService;
 import services.strategies.TradingStrategiesModule;
-import services.strategies.TradingStrategy;
+import services.strategies.exitstrategies.ExitStrategy;
+import services.strategies.tradingstrategies.TradingStrategy;
 import services.trades.TradeService;
 import valueobjects.timeframe.Tick;
 import valueobjects.timeframe.Timeframe;
@@ -34,7 +34,7 @@ public class MoneyMakerApplication {
 
     public static void main(String[] args) {
 
-        int timeframeSize = 200;
+        int timeframeSize = 250;
         String assetCode = "XBTGBP";
         String assetDetailCode = "XXBTZGBP";
 
@@ -50,9 +50,19 @@ public class MoneyMakerApplication {
         List<TradingStrategy> enabledTradingStrategies = loadServices(TradingStrategy.class, injector).stream()
                 .filter(TradingStrategy::enabled).collect(Collectors.toList());
 
+        // Pick up available exit strategies
+        List<ExitStrategy> exitStrategies = new ArrayList<>(loadServices(ExitStrategy.class, injector));
+
         // initialize each strategy
         enabledTradingStrategies.forEach(tradingStrategy -> {
             Timeframe timeframe = new Timeframe(timeframeSize);
+
+            ExitStrategy exitStrategy = exitStrategies.stream()
+                    .filter(strategy -> tradingStrategy.exitStrategyName().equals(strategy.name())).findFirst()
+                    .orElseThrow(() -> new IllegalStateException(
+                            "Exit strategy with name " + tradingStrategy.exitStrategyName() + " was not found for trading strategy: " + tradingStrategy.name()
+                    ));
+            log.info(tradingStrategy.name() + ": Found exit strategy with name " + exitStrategy.name());
 
             // initialize timeframe with previous trades
             Optional<TradesResponse> tradesResponse = krakenClient.getHistoricData(assetCode, tradingStrategy.periodLength());
@@ -77,18 +87,34 @@ public class MoneyMakerApplication {
                 if (isPriceChanged) {
                     timeframe.addTick(currentPrice);
 
-                    // only run when the timeframe we are interesting in is full with prices.
+                    // only run when the timeframe we are interested in is full with prices.
                     if (timeframe.isFull()) {
+
+                        // check open trades and close if exit strategy says so
+
+                        // for each loop of all open trades from this strategy and try to check if they need closing.
+                        tradeService.getOpenTradesByStrategy(tradingStrategy.name()).forEach(trade -> {
+                            exitStrategy.strategy().apply(trade.getId(), timeframe).ifPresent(closeTradeSignal -> {
+                                TradeOrderEntity exitOrder = new TradeOrderEntity();
+                                exitOrder.setOrderReference(UUID.randomUUID().toString());
+                                exitOrder.setType(closeTradeSignal);
+                                exitOrder.setPrice(currentPrice);
+                                exitOrder.setVolume(BigDecimal.TEN);
+                                exitOrder.setTime(LocalDateTime.now());
+                                exitOrder.setStatus(TradeOrderStatus.PENDING);
+                                exitOrder.setAssetCode(assetCode);
+                                exitOrder.setCost(BigDecimal.ZERO);
+
+                                trade.setExitOrder(exitOrder);
+
+                                tradeService.trade(trade);
+                            });
+                        });
+
+                        // open new trades based on the trading strategy
                         tradingStrategy.strategy().apply(timeframe)
                                 // react to the specified trading signal
                                 .ifPresent(signal -> {
-
-                                    ExitStrategyEntity exitStrategy = new ExitStrategyEntity();
-                                    exitStrategy.setExitPrice(BigDecimal.TEN);
-                                    exitStrategy.setName("Trailing");
-                                    exitStrategy.setCurrentPrice(BigDecimal.ZERO);
-                                    exitStrategy.setLastUpdate(LocalDateTime.now());
-
                                     TradeOrderEntity entryOrder = new TradeOrderEntity();
                                     entryOrder.setOrderReference(UUID.randomUUID().toString());
                                     entryOrder.setType(signal);
@@ -102,7 +128,6 @@ public class MoneyMakerApplication {
                                     TradeEntity trade = new TradeEntity();
                                     trade.setEntryStrategy(tradingStrategy.name());
                                     trade.setPeriodLength(tradingStrategy.periodLength());
-                                    trade.setExitStrategy(exitStrategy);
                                     trade.setEntryOrder(entryOrder);
 
                                     tradeService.trade(trade);

@@ -1,4 +1,4 @@
-package services.strategies;
+package services.strategies.tradingstrategies;
 
 import valueobjects.timeframe.Timeframe;
 
@@ -18,6 +18,8 @@ public interface TradingStrategy {
     boolean enabled();
 
     String name();
+
+    String exitStrategyName();
 
     Duration periodLength();
 

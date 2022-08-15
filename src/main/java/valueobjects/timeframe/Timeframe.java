@@ -2,11 +2,9 @@ package valueobjects.timeframe;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.stream.Collectors;
 
 /**
  * Keeps track of the specified object information over time. It holds a specified amount of ticks.
@@ -20,8 +18,12 @@ public class Timeframe {
     }
 
     public Timeframe(int ticksLimits, Collection<Tick> values) {
+        List<Tick> timeSortedTickers = values.stream()
+                // sort tickers by time in case they come in in random order
+                .sorted(Comparator.comparing(Tick::getTime))
+                .collect(Collectors.toList());
         timeFrame = new LinkedBlockingDeque<>(ticksLimits);
-        timeFrame.addAll(values);
+        timeFrame.addAll(timeSortedTickers);
     }
 
     public LinkedList<Tick> addTick(BigDecimal value) {
@@ -46,12 +48,25 @@ public class Timeframe {
         return getTicks().size();
     }
 
+    /**
+     * Returns a boolean that specifies if the current timeframe is at max capacity.
+     */
     public boolean isFull() {
         return timeFrame.remainingCapacity() == 0;
     }
 
+    /**
+     * Get the first portion of the timeframe. The size of the portion is the specified int.
+     */
     public Timeframe subframe(int index) {
-        List<Tick> subTicks = this.getTicks().subList(0, index);
+        return subframe(0, index);
+    }
+
+    /**
+     * Returns a partial timeframe based on the specified indexes.
+     */
+    public Timeframe subframe(int fromIndex, int toIndex) {
+        List<Tick> subTicks = this.getTicks().subList(fromIndex, toIndex);
         return new Timeframe(subTicks.size(), subTicks);
     }
 

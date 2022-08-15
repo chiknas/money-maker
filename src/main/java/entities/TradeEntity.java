@@ -24,9 +24,8 @@ public class TradeEntity {
     @Column(name = "period_length", nullable = false)
     private String periodLength;
 
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "exit_strategy_id", referencedColumnName = "id", nullable = false)
-    private ExitStrategyEntity exitStrategy;
+    @Column(name = "exit_strategy", nullable = false)
+    private String exitStrategy;
 
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "entry_order_id", referencedColumnName = "id", nullable = false)

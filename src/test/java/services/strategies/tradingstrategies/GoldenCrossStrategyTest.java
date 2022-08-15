@@ -1,11 +1,11 @@
-package services.strategies;
+package services.strategies.tradingstrategies;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import properties.GoldenCrossStrategyProperties;
 import properties.PropertiesService;
 import services.indicators.MovingAverageIndicator;
-import services.strategies.TradingStrategy.TradingSignal;
+import services.strategies.tradingstrategies.TradingStrategy.TradingSignal;
 import valueobjects.timeframe.Tick;
 import valueobjects.timeframe.Timeframe;
 
@@ -28,7 +28,7 @@ class GoldenCrossStrategyTest {
     void setUp() {
         propertiesService = mock(PropertiesService.class);
         when(propertiesService.loadProperties(eq(GoldenCrossStrategyProperties.class)))
-                .thenReturn(Optional.of(new GoldenCrossStrategyProperties("PT10S", 2, 5, true)));
+                .thenReturn(Optional.of(new GoldenCrossStrategyProperties("PT10S", 2, 5, true, "ExitStrat")));
     }
 
     @Test

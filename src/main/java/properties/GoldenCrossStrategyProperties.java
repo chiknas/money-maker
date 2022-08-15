@@ -17,6 +17,7 @@ public class GoldenCrossStrategyProperties {
     private Integer shortPeriod;
     private Integer longPeriod;
     private Boolean enabled;
+    private String exitStrategy;
 
     public Duration getPeriodLength() {
         return Optional.ofNullable(this.periodLength)

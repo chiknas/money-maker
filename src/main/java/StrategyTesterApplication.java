@@ -1,7 +1,6 @@
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import database.DatabaseModule;
-import entities.ExitStrategyEntity;
 import entities.TradeEntity;
 import entities.TradeOrderEntity;
 import entities.TradeOrderStatus;
@@ -11,15 +10,17 @@ import httpclients.kraken.KrakenModule;
 import httpclients.kraken.response.trades.TradeDetails;
 import httpclients.kraken.response.trades.TradesResponse;
 import lombok.extern.slf4j.Slf4j;
-import services.strategies.ThreeEmaCrossoverStrategy;
 import services.strategies.TradingStrategiesModule;
-import services.strategies.TradingStrategy;
+import services.strategies.exitstrategies.ExitStrategy;
+import services.strategies.exitstrategies.TrailingStopExitStrategy;
+import services.strategies.tradingstrategies.ThreeEmaCrossoverStrategy;
+import services.strategies.tradingstrategies.TradingStrategy;
 import services.trades.TradeService;
 import valueobjects.timeframe.Tick;
 import valueobjects.timeframe.Timeframe;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.math.RoundingMode;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -33,7 +34,7 @@ import java.util.stream.Collectors;
 public class StrategyTesterApplication {
 
     public static void main(String[] args) {
-        int timeframeSize = 200;
+        int timeframeSize = 250;
         String assetCode = "XBTGBP";
         String assetDetailCode = "XXBTZGBP";
 
@@ -43,6 +44,9 @@ public class StrategyTesterApplication {
 
         // select a strategy here
         TradingStrategy strategy = injector.getInstance(ThreeEmaCrossoverStrategy.class);
+
+        // select exit strategy here
+        ExitStrategy exitStrategy = injector.getInstance(TrailingStopExitStrategy.class);
 
         Timeframe timeframe = new Timeframe(timeframeSize);
 
@@ -63,30 +67,58 @@ public class StrategyTesterApplication {
         int skipItems = 55;
         for (int i = skipItems; i < timeframeSize - 1; i++) {
             Timeframe subframe = timeframe.subframe(i);
+            Tick currentTick = subframe.getTicks().getLast();
+
+            // check open trades and close if exit strategy says so
+            tradeService.getOpenTradesByStrategy(strategy.name()).forEach(trade -> {
+                exitStrategy.strategy().apply(trade.getId(), subframe).ifPresent(closeTradeSignal -> {
+                    log.info("Exiting the following order with these details!!");
+                    log.info("    TradeId: " + trade.getId());
+                    log.info("    ExitSignal: " + closeTradeSignal);
+                    log.info("    ExitPrice: " + currentTick.getValue());
+                    log.info("    ExitTime: " + currentTick.getTime().toString());
+
+                    TradeOrderEntity exitOrder = new TradeOrderEntity();
+                    exitOrder.setOrderReference(UUID.randomUUID().toString());
+                    exitOrder.setType(closeTradeSignal);
+                    exitOrder.setPrice(currentTick.getValue());
+                    exitOrder.setVolume(BigDecimal.TEN);
+                    exitOrder.setTime(currentTick.getTime());
+                    exitOrder.setStatus(TradeOrderStatus.PENDING);
+                    exitOrder.setAssetCode(assetCode);
+                    exitOrder.setCost(BigDecimal.ZERO);
+
+                    trade.setExitOrder(exitOrder);
+
+                    BigDecimal margin = trade.getEntryOrder().getType().equals(TradingStrategy.TradingSignal.BUY)
+                            ? currentTick.getValue().subtract(trade.getEntryOrder().getPrice())
+                            : trade.getEntryOrder().getPrice().subtract(currentTick.getValue());
+                    BigDecimal divisor = currentTick.getValue().add(trade.getEntryOrder().getPrice()).divide(BigDecimal.valueOf(2), 10, RoundingMode.HALF_EVEN);
+                    trade.setProfit(margin.divide(divisor, 10, RoundingMode.HALF_EVEN).multiply(BigDecimal.valueOf(100)));
+
+                    tradeService.trade(trade);
+                });
+            });
+
+
             strategy.strategy().apply(subframe)
                     // react to the specified trading signal
                     .ifPresent(signal -> {
 
-                        ExitStrategyEntity exitStrategy = new ExitStrategyEntity();
-                        exitStrategy.setExitPrice(BigDecimal.TEN);
-                        exitStrategy.setName("Trailing");
-                        exitStrategy.setCurrentPrice(BigDecimal.ZERO);
-                        exitStrategy.setLastUpdate(LocalDateTime.now());
-
                         TradeOrderEntity entryOrder = new TradeOrderEntity();
                         entryOrder.setOrderReference(UUID.randomUUID().toString());
                         entryOrder.setType(signal);
-                        entryOrder.setPrice(BigDecimal.TEN);
+                        entryOrder.setPrice(currentTick.getValue());
                         entryOrder.setStatus(TradeOrderStatus.PENDING);
                         entryOrder.setVolume(BigDecimal.TEN);
-                        entryOrder.setTime(LocalDateTime.now());
+                        entryOrder.setTime(currentTick.getTime());
                         entryOrder.setAssetCode(assetCode);
                         entryOrder.setCost(BigDecimal.ZERO);
 
                         TradeEntity trade = new TradeEntity();
                         trade.setEntryStrategy(strategy.name());
+                        trade.setExitStrategy(exitStrategy.name());
                         trade.setPeriodLength(strategy.periodLength());
-                        trade.setExitStrategy(exitStrategy);
                         trade.setEntryOrder(entryOrder);
 
                         tradeService.trade(trade);

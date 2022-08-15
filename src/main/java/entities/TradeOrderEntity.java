@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import services.TimeService;
-import services.strategies.TradingStrategy;
+import services.strategies.tradingstrategies.TradingStrategy;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;

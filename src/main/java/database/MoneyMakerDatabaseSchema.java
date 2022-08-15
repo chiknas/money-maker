@@ -25,7 +25,7 @@ public class MoneyMakerDatabaseSchema extends TableSetSchema {
                                 // the period time length for each candlestick
                                 column("period_length", STRING, 19),
                                 // strategy id of the exit_strategy table with more details about the exit strategy to be used for this trade
-                                column("exit_strategy_id", BIG_INTEGER),
+                                column("exit_strategy", STRING, 100),
                                 // the order id that opened this trade
                                 column("entry_order_id", BIG_INTEGER),
                                 // the order id that closed this trade
@@ -45,13 +45,6 @@ public class MoneyMakerDatabaseSchema extends TableSetSchema {
                                 // if the trade is currently open/closed/pending
                                 column("status", STRING, 19),
                                 column("volume", BIG_INTEGER, 19)
-                        ),
-                        table("exit_strategy").columns(
-                                column("id", BIG_INTEGER).autoNumbered(1),
-                                column("name", STRING, 100),
-                                column("current_price", DECIMAL, 100),
-                                column("exit_price", DECIMAL, 100),
-                                column("last_update", BIG_INTEGER, 19)
                         )
                 )
         );

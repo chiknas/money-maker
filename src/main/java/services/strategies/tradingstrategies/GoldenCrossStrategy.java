@@ -1,4 +1,4 @@
-package services.strategies;
+package services.strategies.tradingstrategies;
 
 import com.google.inject.Inject;
 import properties.GoldenCrossStrategyProperties;
@@ -39,6 +39,13 @@ public class GoldenCrossStrategy implements TradingStrategy {
     @Override
     public String name() {
         return "GoldenCross";
+    }
+
+    @Override
+    public String exitStrategyName() {
+        return propertiesService.loadProperties(GoldenCrossStrategyProperties.class)
+                .map(GoldenCrossStrategyProperties::getExitStrategy)
+                .orElseThrow(() -> new IllegalStateException(this.name() + " strategy does not have an exit strategy."));
     }
 
     @Override

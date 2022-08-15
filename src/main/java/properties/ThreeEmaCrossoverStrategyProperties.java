@@ -18,6 +18,7 @@ public class ThreeEmaCrossoverStrategyProperties {
     private Integer mediumPeriod;
     private Integer longPeriod;
     private Boolean enabled;
+    private String exitStrategy;
 
     public Duration getPeriodLength() {
         return Optional.ofNullable(this.periodLength)

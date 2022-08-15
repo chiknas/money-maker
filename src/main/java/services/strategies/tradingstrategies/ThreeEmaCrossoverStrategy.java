@@ -1,4 +1,4 @@
-package services.strategies;
+package services.strategies.tradingstrategies;
 
 import com.google.inject.Inject;
 import properties.PropertiesService;
@@ -39,6 +39,13 @@ public class ThreeEmaCrossoverStrategy implements TradingStrategy {
     @Override
     public String name() {
         return "3EmaCrossover";
+    }
+
+    @Override
+    public String exitStrategyName() {
+        return propertiesService.loadProperties(ThreeEmaCrossoverStrategyProperties.class)
+                .map(ThreeEmaCrossoverStrategyProperties::getExitStrategy)
+                .orElseThrow(() -> new IllegalStateException(this.name() + " strategy does not have an exit strategy."));
     }
 
     @Override

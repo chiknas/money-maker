@@ -1,4 +1,4 @@
-package services.strategies;
+package services.strategies.tradingstrategies;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,7 +39,7 @@ class ThreeEmaCrossoverStrategyTest {
         exponentialMovingAverageIndicator = mock(ExponentialMovingAverageIndicator.class);
         when(propertiesService.loadProperties(eq(ThreeEmaCrossoverStrategyProperties.class)))
                 .thenReturn(Optional.of(
-                        new ThreeEmaCrossoverStrategyProperties("PT1H", shortPeriod, mediumPeriod, longPeriod, true)
+                        new ThreeEmaCrossoverStrategyProperties("PT1H", shortPeriod, mediumPeriod, longPeriod, true, "ExitStrat")
                 ));
 
         threeEmaCrossoverStrategy = new ThreeEmaCrossoverStrategy(propertiesService, exponentialMovingAverageIndicator);
