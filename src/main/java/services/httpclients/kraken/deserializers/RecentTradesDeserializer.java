@@ -1,7 +1,7 @@
-package httpclients.kraken.deserializers;
+package services.httpclients.kraken.deserializers;
 
 import com.google.gson.*;
-import httpclients.kraken.response.trades.Trades;
+import services.httpclients.kraken.response.trades.Trades;
 
 import java.lang.reflect.Type;
 import java.util.List;

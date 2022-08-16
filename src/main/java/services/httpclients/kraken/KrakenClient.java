@@ -1,10 +1,10 @@
-package httpclients.kraken;
+package services.httpclients.kraken;
 
 import com.google.gson.Gson;
 import com.google.inject.Inject;
-import httpclients.AbstractClient;
-import httpclients.kraken.response.ticker.TickerPairResponse;
-import httpclients.kraken.response.trades.TradesResponse;
+import services.httpclients.AbstractClient;
+import services.httpclients.kraken.response.ticker.TickerPairResponse;
+import services.httpclients.kraken.response.trades.TradesResponse;
 
 import java.net.http.HttpClient;
 import java.time.Duration;

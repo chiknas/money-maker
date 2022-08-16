@@ -1,7 +1,7 @@
 package services.strategies.exitstrategies;
 
 import com.google.inject.Inject;
-import entities.TradeEntity;
+import database.entities.TradeEntity;
 import properties.PropertiesService;
 import properties.TrailingStopExitStrategyProperties;
 import services.strategies.tradingstrategies.TradingStrategy;

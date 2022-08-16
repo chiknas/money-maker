@@ -1,4 +1,4 @@
-package httpclients.kraken.response.trades;
+package services.httpclients.kraken.response.trades;
 
 import services.TimeService;
 

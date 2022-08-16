@@ -1,7 +1,7 @@
 package services.strategies.exitstrategies;
 
-import entities.TradeEntity;
-import entities.TradeOrderEntity;
+import database.entities.TradeEntity;
+import database.entities.TradeOrderEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;

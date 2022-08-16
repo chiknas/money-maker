@@ -1,11 +1,11 @@
-package httpclients;
+package services.httpclients;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import httpclients.kraken.deserializers.RecentTradesDeserializer;
-import httpclients.kraken.response.trades.Trades;
+import services.httpclients.kraken.deserializers.RecentTradesDeserializer;
+import services.httpclients.kraken.response.trades.Trades;
 
 import java.net.http.HttpClient;
 

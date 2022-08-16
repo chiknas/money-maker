@@ -1,8 +1,8 @@
 package services.trades;
 
 import com.google.inject.Inject;
-import daos.TradeDao;
-import entities.TradeEntity;
+import database.daos.TradeDao;
+import database.entities.TradeEntity;
 
 import java.math.BigInteger;
 import java.util.List;

@@ -1,4 +1,4 @@
-package httpclients.kraken.response.ticker;
+package services.httpclients.kraken.response.ticker;
 
 import java.math.BigDecimal;
 import java.util.List;
