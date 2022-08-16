@@ -20,20 +20,20 @@ import java.util.function.Function;
  */
 public class GoldenCrossStrategy implements TradingStrategy {
 
-    private final PropertiesService propertiesService;
+    private final GoldenCrossStrategyProperties properties;
     private final MovingAverageIndicator movingAverageIndicator;
 
     @Inject
     public GoldenCrossStrategy(PropertiesService propertiesService, MovingAverageIndicator movingAverageIndicator) {
-        this.propertiesService = propertiesService;
         this.movingAverageIndicator = movingAverageIndicator;
+        this.properties = propertiesService.loadProperties(GoldenCrossStrategyProperties.class).orElseThrow(() ->
+                new IllegalStateException("Trade config must be setup before the system starts trading.")
+        );
     }
 
     @Override
     public boolean enabled() {
-        return propertiesService.loadProperties(GoldenCrossStrategyProperties.class)
-                .map(GoldenCrossStrategyProperties::getEnabled)
-                .orElse(false);
+        return properties.getEnabled();
     }
 
     @Override
@@ -43,25 +43,25 @@ public class GoldenCrossStrategy implements TradingStrategy {
 
     @Override
     public String exitStrategyName() {
-        return propertiesService.loadProperties(GoldenCrossStrategyProperties.class)
-                .map(GoldenCrossStrategyProperties::getExitStrategy)
-                .orElseThrow(() -> new IllegalStateException(this.name() + " strategy does not have an exit strategy."));
+        return properties.getExitStrategy();
     }
 
     @Override
     public Duration periodLength() {
-        return propertiesService.loadProperties(GoldenCrossStrategyProperties.class)
-                .map(GoldenCrossStrategyProperties::getPeriodLength)
-                .orElse(Duration.ofSeconds(1));
+        return properties.getPeriodLength();
+    }
+
+    @Override
+    public Integer timeframeSize() {
+        return properties.getTimeframeSize();
     }
 
     @Override
     public Function<Timeframe, Optional<TradingSignal>> strategy() {
         return (timeframe) -> {
 
-            Optional<GoldenCrossStrategyProperties> goldenCrossStrategyProperties = propertiesService.loadProperties(GoldenCrossStrategyProperties.class);
-            Integer shortMovingAveragePeriod = goldenCrossStrategyProperties.map(GoldenCrossStrategyProperties::getShortPeriod).orElse(50);
-            Integer longMovingAveragePeriod = goldenCrossStrategyProperties.map(GoldenCrossStrategyProperties::getLongPeriod).orElse(100);
+            Integer shortMovingAveragePeriod = properties.getShortPeriod();
+            Integer longMovingAveragePeriod = properties.getLongPeriod();
 
             Timeframe shortMovingAverage = movingAverageIndicator.apply(timeframe, shortMovingAveragePeriod);
             Timeframe longMovingAverage = movingAverageIndicator.apply(timeframe, longMovingAveragePeriod);

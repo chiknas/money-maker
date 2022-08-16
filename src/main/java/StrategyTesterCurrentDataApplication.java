@@ -51,7 +51,7 @@ public class StrategyTesterCurrentDataApplication {
         Timeframe timeframe = new Timeframe(timeframeSize);
 
         // initialize timeframe with previous trades
-        Optional<TradesResponse> tradesResponse = krakenClient.getHistoricData(assetCode, strategy.periodLength());
+        Optional<TradesResponse> tradesResponse = krakenClient.getHistoricData(strategy.periodLength());
         tradesResponse.ifPresent(response -> {
             List<TradeDetails> tradeDetails = response.getResult().getTradeDetails(assetDetailCode);
             tradeDetails.stream().sorted(Comparator.comparing(TradeDetails::getTime))

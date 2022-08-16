@@ -6,6 +6,8 @@ import database.entities.TradeEntity;
 import database.entities.TradeOrderEntity;
 import database.entities.TradeOrderStatus;
 import lombok.extern.slf4j.Slf4j;
+import properties.PropertiesService;
+import properties.TradeProperties;
 import services.httpclients.kraken.KrakenClient;
 import services.strategies.tradingstrategies.TradingStrategy;
 
@@ -24,11 +26,13 @@ public class TradeService {
 
     private final TradeDao transactionsDao;
     private final KrakenClient client;
+    private final PropertiesService propertiesService;
 
     @Inject
-    public TradeService(TradeDao transactionsDao, KrakenClient client) {
+    public TradeService(TradeDao transactionsDao, KrakenClient client, PropertiesService propertiesService) {
         this.transactionsDao = transactionsDao;
         this.client = client;
+        this.propertiesService = propertiesService;
     }
 
     public void save(TradeEntity trade) {
@@ -49,34 +53,40 @@ public class TradeService {
      * price info at first. When the order is executed we can update the db entry.
      * This will happen next time we check our pending orders in the API.
      */
-    public void openTrade(String assetCode, TradingStrategy.TradingSignal tradingSignal, TradingStrategy tradingStrategy) {
+    public void openTrade(BigDecimal price, TradingStrategy.TradingSignal tradingSignal, TradingStrategy tradingStrategy) {
         BigDecimal volume = BigDecimal.TEN;
         UUID orderReference = UUID.randomUUID();
 
-        client.postMarketOrder(assetCode, BigDecimal.TEN, tradingSignal).ifPresentOrElse(
-                response -> Optional.ofNullable(response.getResult().getTxid())
-                        // get the first transaction as there should only be 1.
-                        .flatMap(transactionList -> transactionList.stream().findFirst())
-                        .ifPresentOrElse(orderTransactionId -> {
-                            TradeOrderEntity entryOrder = new TradeOrderEntity();
-                            entryOrder.setOrderReference(orderReference);
-                            entryOrder.setOrderTransaction(orderTransactionId);
-                            entryOrder.setType(tradingSignal);
-                            entryOrder.setPrice(null);
-                            entryOrder.setVolume(volume);
-                            entryOrder.setTime(LocalDateTime.now());
-                            entryOrder.setStatus(TradeOrderStatus.PENDING);
-                            entryOrder.setAssetCode(assetCode);
-                            entryOrder.setCost(null);
+        // load trading config
+        propertiesService.loadProperties(TradeProperties.class).ifPresentOrElse(properties ->
+                        // post the order
+                        client.postMarketOrder(BigDecimal.TEN, tradingSignal)
+                                // log the order in the db if successful
+                                .ifPresentOrElse(
+                                        response -> Optional.ofNullable(response.getResult().getTxid())
+                                                // get the first transaction as there should only be 1.
+                                                .flatMap(transactionList -> transactionList.stream().findFirst())
+                                                .ifPresentOrElse(orderTransactionId -> {
+                                                    TradeOrderEntity entryOrder = new TradeOrderEntity();
+                                                    entryOrder.setOrderReference(orderReference);
+                                                    entryOrder.setOrderTransaction(orderTransactionId);
+                                                    entryOrder.setType(tradingSignal);
+                                                    entryOrder.setPrice(null);
+                                                    entryOrder.setVolume(volume);
+                                                    entryOrder.setTime(LocalDateTime.now());
+                                                    entryOrder.setStatus(TradeOrderStatus.PENDING);
+                                                    entryOrder.setAssetCode(properties.getAssetCode());
+                                                    entryOrder.setCost(null);
 
-                            TradeEntity trade = new TradeEntity();
-                            trade.setEntryStrategy(tradingStrategy.name());
-                            trade.setPeriodLength(tradingStrategy.periodLength());
-                            trade.setEntryOrder(entryOrder);
+                                                    TradeEntity trade = new TradeEntity();
+                                                    trade.setEntryStrategy(tradingStrategy.name());
+                                                    trade.setPeriodLength(tradingStrategy.periodLength());
+                                                    trade.setEntryOrder(entryOrder);
 
-                            transactionsDao.save(trade);
-                        }, () -> log.error("Order transaction id was not returned by the api which means the order was not successful.")),
-                () -> log.error("Trade was not opened because the api request was not successful.")
-        );
+                                                    transactionsDao.save(trade);
+                                                }, () -> log.error("Order transaction id was not returned by the api which means the order was not successful.")),
+                                        () -> log.error("Trade was not opened because the api request was not successful.")
+                                ),
+                () -> log.error("Trading properties config could not be loaded."));
     }
 }

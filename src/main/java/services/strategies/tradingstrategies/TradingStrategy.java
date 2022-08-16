@@ -23,5 +23,7 @@ public interface TradingStrategy {
 
     Duration periodLength();
 
+    Integer timeframeSize();
+
     Function<Timeframe, Optional<TradingSignal>> strategy();
 }

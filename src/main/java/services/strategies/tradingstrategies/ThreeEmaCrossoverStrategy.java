@@ -20,20 +20,20 @@ import java.util.function.Function;
  */
 public class ThreeEmaCrossoverStrategy implements TradingStrategy {
 
-    private final PropertiesService propertiesService;
+    private final ThreeEmaCrossoverStrategyProperties properties;
     private final ExponentialMovingAverageIndicator exponentialMovingAverageIndicator;
 
     @Inject
     public ThreeEmaCrossoverStrategy(PropertiesService propertiesService, ExponentialMovingAverageIndicator exponentialMovingAverageIndicator) {
-        this.propertiesService = propertiesService;
         this.exponentialMovingAverageIndicator = exponentialMovingAverageIndicator;
+        this.properties = propertiesService.loadProperties(ThreeEmaCrossoverStrategyProperties.class).orElseThrow(() ->
+                new IllegalStateException("Trade config must be setup before the system starts trading.")
+        );
     }
 
     @Override
     public boolean enabled() {
-        return propertiesService.loadProperties(ThreeEmaCrossoverStrategyProperties.class)
-                .map(ThreeEmaCrossoverStrategyProperties::getEnabled)
-                .orElse(false);
+        return properties.getEnabled();
     }
 
     @Override
@@ -43,26 +43,26 @@ public class ThreeEmaCrossoverStrategy implements TradingStrategy {
 
     @Override
     public String exitStrategyName() {
-        return propertiesService.loadProperties(ThreeEmaCrossoverStrategyProperties.class)
-                .map(ThreeEmaCrossoverStrategyProperties::getExitStrategy)
-                .orElseThrow(() -> new IllegalStateException(this.name() + " strategy does not have an exit strategy."));
+        return properties.getExitStrategy();
     }
 
     @Override
     public Duration periodLength() {
-        return propertiesService.loadProperties(ThreeEmaCrossoverStrategyProperties.class)
-                .map(ThreeEmaCrossoverStrategyProperties::getPeriodLength)
-                .orElse(Duration.ofHours(1));
+        return properties.getPeriodLength();
+    }
+
+    @Override
+    public Integer timeframeSize() {
+        return properties.getTimeframeSize();
     }
 
     @Override
     public Function<Timeframe, Optional<TradingSignal>> strategy() {
         return (timeframe) -> {
             // Load settings
-            Optional<ThreeEmaCrossoverStrategyProperties> threeEmaCrossoverStrategyProperties = propertiesService.loadProperties(ThreeEmaCrossoverStrategyProperties.class);
-            Integer shortMovingAveragePeriod = threeEmaCrossoverStrategyProperties.map(ThreeEmaCrossoverStrategyProperties::getShortPeriod).orElse(20);
-            Integer mediumMovingAveragePeriod = threeEmaCrossoverStrategyProperties.map(ThreeEmaCrossoverStrategyProperties::getMediumPeriod).orElse(50);
-            Integer longMovingAveragePeriod = threeEmaCrossoverStrategyProperties.map(ThreeEmaCrossoverStrategyProperties::getLongPeriod).orElse(200);
+            Integer shortMovingAveragePeriod = properties.getShortPeriod();
+            Integer mediumMovingAveragePeriod = properties.getMediumPeriod();
+            Integer longMovingAveragePeriod = properties.getLongPeriod();
 
             // Calculate EMAs (short, medium and long)
             Timeframe shortEma = exponentialMovingAverageIndicator.apply(timeframe, shortMovingAveragePeriod);

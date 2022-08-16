@@ -2,6 +2,8 @@ package services.httpclients.kraken;
 
 import com.google.gson.Gson;
 import com.google.inject.Inject;
+import properties.PropertiesService;
+import properties.TradeProperties;
 import services.httpclients.AbstractClient;
 import services.httpclients.kraken.postrequestobjects.addorder.AddOrderPostRequestBody;
 import services.httpclients.kraken.postrequestobjects.addorder.KrakenOrderDirection;
@@ -19,11 +21,15 @@ import java.util.Optional;
 public class KrakenClient extends AbstractClient {
 
     private final KrakenAuthentication krakenAuthentication;
+    private final TradeProperties tradeProperties;
 
     @Inject
-    public KrakenClient(KrakenAuthentication krakenAuthentication, HttpClient httpClient, Gson gson) {
+    public KrakenClient(KrakenAuthentication krakenAuthentication, HttpClient httpClient, Gson gson, PropertiesService propertiesService) {
         super(httpClient, gson);
         this.krakenAuthentication = krakenAuthentication;
+        this.tradeProperties = propertiesService.loadProperties(TradeProperties.class).orElseThrow(
+                () -> new IllegalStateException("Trade config must be setup before the system starts trading.")
+        );
     }
 
     @Override
@@ -32,8 +38,8 @@ public class KrakenClient extends AbstractClient {
     }
 
     // https://docs.kraken.com/rest/#tag/Market-Data/operation/getTickerInformation
-    public Optional<TickerPairResponse> getTickerInfo(String assetCode) {
-        Optional<TickerPairResponse> tickerPairResponse = getRequest("/0/public/Ticker?pair=" + assetCode).flatMap(request -> super.send(request, TickerPairResponse.class));
+    public Optional<TickerPairResponse> getTickerInfo() {
+        Optional<TickerPairResponse> tickerPairResponse = getRequest("/0/public/Ticker?pair=" + tradeProperties.getAssetCode()).flatMap(request -> super.send(request, TickerPairResponse.class));
         tickerPairResponse.ifPresent(response -> logErrors(response.getError()));
         return tickerPairResponse;
     }
@@ -47,8 +53,8 @@ public class KrakenClient extends AbstractClient {
     }
 
     // https://docs.kraken.com/rest/#tag/Market-Data/operation/getOHLCData
-    public Optional<TradesResponse> getHistoricData(String assetCode) {
-        return getHistoricData(assetCode, null);
+    public Optional<TradesResponse> getHistoricData() {
+        return getHistoricData(null);
     }
 
     /**
@@ -57,11 +63,11 @@ public class KrakenClient extends AbstractClient {
      * 1 5 15 30 60 240 1440 10080 21600
      * https://docs.kraken.com/rest/#tag/Market-Data/operation/getOHLCData
      */
-    public Optional<TradesResponse> getHistoricData(String assetCode, Duration period) {
+    public Optional<TradesResponse> getHistoricData(Duration period) {
         String intervalParam = Optional.ofNullable(period)
                 .map(periodDuration -> "&interval=" + (periodDuration.toMinutes() > 0 ? periodDuration.toMinutes() : "1"))
                 .orElse("");
-        String requestUrl = "/0/public/OHLC?pair=" + assetCode + intervalParam;
+        String requestUrl = "/0/public/OHLC?pair=" + tradeProperties.getAssetCode() + intervalParam;
 
         Optional<TradesResponse> tradesResponse = getRequest(requestUrl).flatMap(request -> super.send(request, TradesResponse.class));
         tradesResponse.ifPresent(response -> logErrors(response.getError()));
@@ -72,13 +78,13 @@ public class KrakenClient extends AbstractClient {
      * Add a new order of type 'market'. A market order is designed to be executed immediately.
      * https://docs.kraken.com/rest/#tag/User-Trading/operation/addOrder
      */
-    public Optional<AddOrderResponse> postMarketOrder(String assetCode, BigDecimal volume, TradingStrategy.TradingSignal tradingSignal) {
+    public Optional<AddOrderResponse> postMarketOrder(BigDecimal volume, TradingStrategy.TradingSignal tradingSignal) {
         String path = "/0/private/AddOrder";
         String nonce = krakenAuthentication.getNonce();
         KrakenOrderDirection orderDirection = TradingStrategy.TradingSignal.BUY.equals(tradingSignal) ? KrakenOrderDirection.BUY : KrakenOrderDirection.SELL;
         AddOrderPostRequestBody postRequestBody = AddOrderPostRequestBody.builder()
                 .nonce(nonce)
-                .pair(assetCode)
+                .pair(tradeProperties.getAssetCode())
                 .orderType(KrakenOrderType.MARKET)
                 .orderDirection(orderDirection)
                 .volume(volume)

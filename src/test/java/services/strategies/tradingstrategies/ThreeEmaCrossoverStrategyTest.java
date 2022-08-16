@@ -39,7 +39,7 @@ class ThreeEmaCrossoverStrategyTest {
         exponentialMovingAverageIndicator = mock(ExponentialMovingAverageIndicator.class);
         when(propertiesService.loadProperties(eq(ThreeEmaCrossoverStrategyProperties.class)))
                 .thenReturn(Optional.of(
-                        new ThreeEmaCrossoverStrategyProperties("PT1H", shortPeriod, mediumPeriod, longPeriod, true, "ExitStrat")
+                        new ThreeEmaCrossoverStrategyProperties("PT1H", shortPeriod, mediumPeriod, longPeriod, true, "ExitStrat", 250)
                 ));
 
         threeEmaCrossoverStrategy = new ThreeEmaCrossoverStrategy(propertiesService, exponentialMovingAverageIndicator);

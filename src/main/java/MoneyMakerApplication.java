@@ -7,6 +7,8 @@ import database.DatabaseModule;
 import database.entities.TradeOrderEntity;
 import database.entities.TradeOrderStatus;
 import lombok.extern.slf4j.Slf4j;
+import properties.PropertiesService;
+import properties.TradeProperties;
 import services.BannerService;
 import services.httpclients.HttpClientModule;
 import services.httpclients.kraken.KrakenClient;
@@ -32,16 +34,15 @@ import java.util.stream.Collectors;
 public class MoneyMakerApplication {
 
     public static void main(String[] args) {
-
-        int timeframeSize = 250;
-        String assetCode = "XBTGBP";
-        String assetDetailCode = "XXBTZGBP";
-
         new BannerService().printBanner();
 
         Injector injector = Guice.createInjector(new HttpClientModule(), new KrakenModule(), new DatabaseModule(), new TradingStrategiesModule());
         KrakenClient krakenClient = injector.getInstance(KrakenClient.class);
         TradeService tradeService = injector.getInstance(TradeService.class);
+        PropertiesService propertiesService = injector.getInstance(PropertiesService.class);
+
+        String assetDetailCode = propertiesService.loadProperties(TradeProperties.class).map(TradeProperties::getDetailAssetCode)
+                .orElseThrow();
 
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
@@ -54,7 +55,7 @@ public class MoneyMakerApplication {
 
         // initialize each strategy
         enabledTradingStrategies.forEach(tradingStrategy -> {
-            Timeframe timeframe = new Timeframe(timeframeSize);
+            Timeframe timeframe = new Timeframe(tradingStrategy.timeframeSize());
 
             ExitStrategy exitStrategy = exitStrategies.stream()
                     .filter(strategy -> tradingStrategy.exitStrategyName().equals(strategy.name())).findFirst()
@@ -64,7 +65,7 @@ public class MoneyMakerApplication {
             log.info(tradingStrategy.name() + ": Found exit strategy with name " + exitStrategy.name());
 
             // initialize timeframe with previous trades
-            Optional<TradesResponse> tradesResponse = krakenClient.getHistoricData(assetCode, tradingStrategy.periodLength());
+            Optional<TradesResponse> tradesResponse = krakenClient.getHistoricData(tradingStrategy.periodLength());
             tradesResponse.ifPresent(response -> {
                 List<TradeDetails> tradeDetails = response.getResult().getTradeDetails(assetDetailCode);
                 tradeDetails.stream().sorted(Comparator.comparing(TradeDetails::getTime))
@@ -77,7 +78,7 @@ public class MoneyMakerApplication {
             log.info(tradingStrategy.name() + ": Initialized trading timeframe.");
 
             // scheduler to run the strategy on the specified period
-            scheduler.scheduleAtFixedRate(() -> krakenClient.getTickerInfo(assetCode).ifPresent(tickerPairResponse -> {
+            scheduler.scheduleAtFixedRate(() -> krakenClient.getTickerInfo().ifPresent(tickerPairResponse -> {
 
                 BigDecimal currentPrice = tickerPairResponse.getResult().get(assetDetailCode).getCurrentPrice();
                 boolean isPriceChanged = timeframe.getTicks().isEmpty() || !timeframe.getTicks().getLast().getValue().equals(currentPrice);
@@ -101,7 +102,7 @@ public class MoneyMakerApplication {
                                 exitOrder.setVolume(BigDecimal.TEN);
                                 exitOrder.setTime(LocalDateTime.now());
                                 exitOrder.setStatus(TradeOrderStatus.PENDING);
-                                exitOrder.setAssetCode(assetCode);
+                                exitOrder.setAssetCode("GBP/BTC");
                                 exitOrder.setCost(BigDecimal.ZERO);
 
                                 trade.setExitOrder(exitOrder);
@@ -117,7 +118,7 @@ public class MoneyMakerApplication {
                     }
                 }
             }), 2, tradingStrategy.periodLength().getSeconds(), TimeUnit.SECONDS);
-            log.info(tradingStrategy.name() + ": Trading session started! Looking for a good ticker to trade: " + assetCode);
+            log.info(tradingStrategy.name() + ": Trading session started! Looking for a good ticker to trade: " + "GBP/BTC");
         });
 
         if (enabledTradingStrategies.isEmpty()) {
