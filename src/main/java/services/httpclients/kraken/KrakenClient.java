@@ -93,7 +93,7 @@ public class KrakenClient extends AbstractClient {
                 .orderType(KrakenOrderType.MARKET)
                 .orderDirection(orderDirection)
                 .volume(volume)
-                .validate(true)
+                .validate(tradeProperties.getPaperTrading())
                 .build();
         String data = postRequestBody.toString();
 

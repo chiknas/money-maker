@@ -16,4 +16,5 @@ public class TradeProperties {
     // you can sell this assetCode pair with this asset code (use it to find balance)
     private String sellAssetCode;
     private BigDecimal accountRisk;
+    private Boolean paperTrading;
 }
