@@ -18,6 +18,7 @@ import java.math.BigDecimal;
 import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.Optional;
+import java.util.UUID;
 
 public class KrakenClient extends AbstractClient {
 
@@ -80,12 +81,13 @@ public class KrakenClient extends AbstractClient {
      * Add a new order of type 'market'. A market order is designed to be executed immediately.
      * https://docs.kraken.com/rest/#tag/User-Trading/operation/addOrder
      */
-    public Optional<AddOrderResponse> postMarketOrder(BigDecimal volume, TradingStrategy.TradingSignal tradingSignal) {
+    public Optional<AddOrderResponse> postMarketOrder(UUID orderReference, BigDecimal volume, TradingStrategy.TradingSignal tradingSignal) {
         String path = "/0/private/AddOrder";
         String nonce = krakenAuthentication.getNonce();
         KrakenOrderDirection orderDirection = TradingStrategy.TradingSignal.BUY.equals(tradingSignal) ? KrakenOrderDirection.BUY : KrakenOrderDirection.SELL;
         AddOrderPostRequestBody postRequestBody = AddOrderPostRequestBody.builder()
                 .nonce(nonce)
+                .orderReference(orderReference)
                 .pair(tradeProperties.getAssetCode())
                 .orderType(KrakenOrderType.MARKET)
                 .orderDirection(orderDirection)

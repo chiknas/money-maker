@@ -65,7 +65,7 @@ public class TradeService {
                 .orElseThrow(() -> new IllegalStateException("Api query to get account balances failed. Trade cancelled."));
 
         // post the order
-        client.postMarketOrder(volume, tradingSignal)
+        client.postMarketOrder(orderReference, volume, tradingSignal)
                 // log the order in the db if successful
                 .ifPresentOrElse(
                         response -> Optional.ofNullable(response.getResult().getTxid())
