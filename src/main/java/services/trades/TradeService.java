@@ -96,6 +96,42 @@ public class TradeService {
     }
 
     /**
+     * Will post an order to complete the trade and hopefully make some money.
+     * It will try to sell/buy the same volume of coin we sold/bought when we entered this trade.
+     */
+    public void closeTrade(TradeEntity trade, TradingStrategy.TradingSignal tradingSignal) {
+        UUID orderReference = UUID.randomUUID();
+
+        // since we are closing a trade we want to exit with the same amount we entered if possible.
+        BigDecimal volume = trade.getEntryOrder().getVolumeExec();
+
+        client.postMarketOrder(orderReference, volume, tradingSignal)
+                .ifPresentOrElse(
+                        response -> Optional.ofNullable(response.getResult().getTxid())
+                                // get the first transaction as there should only be 1.
+                                .flatMap(transactionList -> transactionList.stream().findFirst())
+                                .ifPresentOrElse(orderTransactionId -> {
+                                    TradeOrderEntity exitOrder = new TradeOrderEntity();
+                                    exitOrder.setOrderReference(orderReference);
+                                    exitOrder.setOrderTransaction(orderTransactionId);
+                                    exitOrder.setType(tradingSignal);
+                                    exitOrder.setVolume(volume);
+                                    exitOrder.setTime(LocalDateTime.now());
+                                    exitOrder.setStatus(TradeOrderStatus.PENDING);
+                                    exitOrder.setAssetCode(properties.getAssetCode());
+                                    exitOrder.setCost(null);
+                                    exitOrder.setPrice(null);
+                                    exitOrder.setVolumeExec(null);
+
+                                    trade.setExitOrder(exitOrder);
+
+                                    transactionsDao.save(trade);
+                                }, () -> log.error("Order transaction id was not returned by the api which means the order was not successful.")),
+                        () -> log.error("Trade was not closed because the api request was not successful.")
+                );
+    }
+
+    /**
      * Calculates the amount/volume of crypto to buy using cash. The calculation is based on the capital at risk percentage.
      * Cash is first transformed to the volume of crypto based on the current price.
      */

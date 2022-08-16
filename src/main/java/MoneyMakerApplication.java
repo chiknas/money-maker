@@ -4,8 +4,6 @@ import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.google.inject.util.Types;
 import database.DatabaseModule;
-import database.entities.TradeOrderEntity;
-import database.entities.TradeOrderStatus;
 import lombok.extern.slf4j.Slf4j;
 import properties.PropertiesService;
 import properties.TradeProperties;
@@ -24,7 +22,6 @@ import valueobjects.timeframe.Tick;
 import valueobjects.timeframe.Timeframe;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -96,24 +93,13 @@ public class MoneyMakerApplication {
                         // if they have been executed it will change their status and enrich them with all the details of the fulfilled order.
                         orderService.syncPendingOrders();
 
-                        // for each loop of all open trades from this strategy and try to check if they need closing.
-                        tradeService.getOpenTradesByStrategy(tradingStrategy.name()).forEach(trade -> {
-                            exitStrategy.strategy().apply(trade.getId(), timeframe).ifPresent(closeTradeSignal -> {
-                                TradeOrderEntity exitOrder = new TradeOrderEntity();
-                                exitOrder.setOrderReference(UUID.randomUUID());
-                                exitOrder.setType(closeTradeSignal);
-                                exitOrder.setPrice(currentPrice);
-                                exitOrder.setVolume(BigDecimal.TEN);
-                                exitOrder.setTime(LocalDateTime.now());
-                                exitOrder.setStatus(TradeOrderStatus.PENDING);
-                                exitOrder.setAssetCode("GBP/BTC");
-                                exitOrder.setCost(BigDecimal.ZERO);
-
-                                trade.setExitOrder(exitOrder);
-
-                                tradeService.save(trade);
-                            });
-                        });
+                        // go through all open trades by this strategy
+                        tradeService.getOpenTradesByStrategy(tradingStrategy.name()).forEach(trade ->
+                                // check if we can exit the trade make some money
+                                exitStrategy.strategy().apply(trade.getId(), timeframe).ifPresent(closeTradeSignal ->
+                                        // close the trade with a new order
+                                        tradeService.closeTrade(trade, closeTradeSignal))
+                        );
 
                         // open new trades based on the trading strategy
                         tradingStrategy.strategy().apply(timeframe)

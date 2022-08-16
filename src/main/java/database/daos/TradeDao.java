@@ -14,7 +14,11 @@ public class TradeDao extends AbstractDao<TradeEntity> {
     }
 
     public List<TradeEntity> findOpenTradesByStrategy(String strategyName) {
-        String hql = "FROM TradeEntity t WHERE t.entryStrategy= :strategyName AND t.exitOrder is NULL";
+        String hql = "FROM TradeEntity t " +
+                "INNER JOIN t.entryOrder eo" +
+                "WHERE t.entryStrategy= :strategyName AND " +
+                "t.exitOrder is NULL AND " +
+                "eo.status = 'EXECUTED'";
         Query query = entityManager.createQuery(hql);
         query.setParameter("strategyName", strategyName);
         return (List<TradeEntity>) query.getResultList();
