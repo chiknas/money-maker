@@ -24,7 +24,6 @@ import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Dataset downloaded from the internet will have to be converted to be 2 columns (csv) where
@@ -90,7 +89,7 @@ public class StrategyTesterHistoricDataApplication {
                             log.info("    ExitTime: " + currentTick.getTime().toString());
 
                             TradeOrderEntity exitOrder = new TradeOrderEntity();
-                            exitOrder.setOrderReference(UUID.randomUUID());
+                            exitOrder.setOrderReference(1234);
                             exitOrder.setType(closeTradeSignal);
                             exitOrder.setPrice(currentTick.getValue());
                             exitOrder.setVolume(BigDecimal.TEN);
@@ -117,7 +116,7 @@ public class StrategyTesterHistoricDataApplication {
                             .ifPresent(signal -> {
 
                                 TradeOrderEntity entryOrder = new TradeOrderEntity();
-                                entryOrder.setOrderReference(UUID.randomUUID());
+                                entryOrder.setOrderReference(1234);
                                 entryOrder.setType(signal);
                                 entryOrder.setPrice(currentTick.getValue());
                                 entryOrder.setStatus(TradeOrderStatus.PENDING);

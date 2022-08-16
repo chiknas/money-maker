@@ -44,6 +44,13 @@ class TradeServiceTest {
     }
 
     @Test
+    void generateTradeReference() {
+        // make sure this is always up to 10 digits to ensure:
+        // https://docs.kraken.com/rest/#tag/User-Trading/operation/addOrder
+        assertEquals(10, String.valueOf(tradeService.generateTradeReference()).length());
+    }
+
+    @Test
     void getBuyCryptoVolume() {
         BalanceResponse balanceResponse = mock(BalanceResponse.class);
         BalanceResult balanceResult = mock(BalanceResult.class);

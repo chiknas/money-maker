@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import properties.PropertiesService;
 import properties.TradeProperties;
 import services.httpclients.kraken.KrakenClient;
+import services.httpclients.kraken.response.addorder.AddOrderResult;
 import services.httpclients.kraken.response.balance.BalanceResponse;
 import services.strategies.tradingstrategies.TradingStrategy;
 
@@ -18,7 +19,7 @@ import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Service responsible to execute and manage trades in the system.
@@ -50,13 +51,18 @@ public class TradeService {
         return transactionsDao.findById(id);
     }
 
+    // Generates a unique 32bit integer to be used as order reference. int will always be 32bit.
+    protected int generateTradeReference() {
+        return ThreadLocalRandom.current().nextInt(1000000000, Integer.MAX_VALUE);
+    }
+
     /**
      * Opens a new trade. A new trade opens with a new entry order. A new order will have a status of pending and no
      * price info at first. When the order is executed we can update the db entry.
      * This will happen next time we check our pending orders in the API.
      */
     public void openTrade(BigDecimal price, TradingStrategy.TradingSignal tradingSignal, TradingStrategy tradingStrategy) {
-        UUID orderReference = UUID.randomUUID();
+        int orderReference = generateTradeReference();
 
         BigDecimal volume = client.getBalance().map(balanceResponse ->
                         TradingStrategy.TradingSignal.BUY.equals(tradingSignal)
@@ -68,7 +74,7 @@ public class TradeService {
         client.postMarketOrder(orderReference, volume, tradingSignal)
                 // log the order in the db if successful
                 .ifPresentOrElse(
-                        response -> Optional.ofNullable(response.getResult().getTxid())
+                        response -> Optional.ofNullable(response.getResult()).map(AddOrderResult::getTxid)
                                 // get the first transaction as there should only be 1.
                                 .flatMap(transactionList -> transactionList.stream().findFirst())
                                 .ifPresentOrElse(orderTransactionId -> {
@@ -86,8 +92,10 @@ public class TradeService {
 
                                     TradeEntity trade = new TradeEntity();
                                     trade.setEntryStrategy(tradingStrategy.name());
+                                    trade.setExitStrategy(tradingStrategy.exitStrategyName());
                                     trade.setPeriodLength(tradingStrategy.periodLength());
                                     trade.setEntryOrder(entryOrder);
+                                    // TODO: calculate and set profit
 
                                     transactionsDao.save(trade);
                                 }, () -> log.error("Order transaction id was not returned by the api which means the order was not successful.")),
@@ -100,7 +108,7 @@ public class TradeService {
      * It will try to sell/buy the same volume of coin we sold/bought when we entered this trade.
      */
     public void closeTrade(BigDecimal price, TradeEntity trade, TradingStrategy.TradingSignal tradingSignal) {
-        UUID orderReference = UUID.randomUUID();
+        int orderReference = generateTradeReference();
 
         // since we are closing a trade we want to exit with the same amount we entered if possible.
         // other trades might have changed the available cash/coins so check if we have the exec volume in our balance before we send the order.

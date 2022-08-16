@@ -31,27 +31,27 @@ public class MoneyMakerDatabaseSchema extends TableSetSchema {
                                 // the order id that closed this trade
                                 column("exit_order_id", BIG_INTEGER).nullable(),
                                 // how much we made from this trade
-                                column("profit", BIG_INTEGER).nullable()
+                                column("profit", DECIMAL, 100, 10).nullable()
                         ),
                         table("trade_order").columns(
                                 column("id", BIG_INTEGER).autoNumbered(1),
                                 // UUID that identifies this order
-                                column("order_reference", STRING, 36),
+                                column("order_reference", INTEGER, 10),
                                 // transaction id this order was executed under
                                 column("order_transaction", STRING, 100),
                                 column("type", STRING, 10),
                                 column("asset_code", STRING, 10),
-                                column("price", DECIMAL, 100).nullable(),
+                                column("price", DECIMAL, 100, 10).nullable(),
                                 // LocalDateTime timestamp
                                 column("time", BIG_INTEGER, 19),
                                 // total cash we used for this order
-                                column("cost", DECIMAL, 100).nullable(),
+                                column("cost", DECIMAL, 100, 10).nullable(),
                                 // total fee we paid for this order
-                                column("fee", DECIMAL, 100).nullable(),
+                                column("fee", DECIMAL, 100, 10).nullable(),
                                 // if the trade is currently open/closed/pending
                                 column("status", STRING, 19),
-                                column("volume", BIG_INTEGER, 19),
-                                column("volume_exec", BIG_INTEGER, 19).nullable()
+                                column("volume", DECIMAL, 100, 10),
+                                column("volume_exec", DECIMAL, 100, 10).nullable()
                         )
                 )
         );

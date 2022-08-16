@@ -19,7 +19,6 @@ import java.math.BigDecimal;
 import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.Optional;
-import java.util.UUID;
 
 public class KrakenClient extends AbstractClient {
 
@@ -82,7 +81,7 @@ public class KrakenClient extends AbstractClient {
      * Add a new order of type 'market'. A market order is designed to be executed immediately.
      * https://docs.kraken.com/rest/#tag/User-Trading/operation/addOrder
      */
-    public Optional<AddOrderResponse> postMarketOrder(UUID orderReference, BigDecimal volume, TradingStrategy.TradingSignal tradingSignal) {
+    public Optional<AddOrderResponse> postMarketOrder(int orderReference, BigDecimal volume, TradingStrategy.TradingSignal tradingSignal) {
         String path = "/0/private/AddOrder";
         String nonce = krakenAuthentication.getNonce();
         KrakenOrderDirection orderDirection = TradingStrategy.TradingSignal.BUY.equals(tradingSignal) ? KrakenOrderDirection.BUY : KrakenOrderDirection.SELL;
@@ -107,7 +106,7 @@ public class KrakenClient extends AbstractClient {
      * Returns the current state of the specified order during the specified transaction.
      * We get the transaction id and the order id when we create the order.
      */
-    public Optional<OrderInfoResponse> getOrderInfo(String transactionId, UUID orderReference) {
+    public Optional<OrderInfoResponse> getOrderInfo(String transactionId, int orderReference) {
         String path = "/0/private/QueryOrders";
         String nonce = krakenAuthentication.getNonce();
         String data = "nonce=" + nonce + "&" +

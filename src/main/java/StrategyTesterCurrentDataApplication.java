@@ -24,7 +24,6 @@ import java.math.RoundingMode;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -79,7 +78,7 @@ public class StrategyTesterCurrentDataApplication {
                     log.info("    ExitTime: " + currentTick.getTime().toString());
 
                     TradeOrderEntity exitOrder = new TradeOrderEntity();
-                    exitOrder.setOrderReference(UUID.randomUUID());
+                    exitOrder.setOrderReference(1234);
                     exitOrder.setType(closeTradeSignal);
                     exitOrder.setPrice(currentTick.getValue());
                     exitOrder.setVolume(BigDecimal.TEN);
@@ -106,7 +105,7 @@ public class StrategyTesterCurrentDataApplication {
                     .ifPresent(signal -> {
 
                         TradeOrderEntity entryOrder = new TradeOrderEntity();
-                        entryOrder.setOrderReference(UUID.randomUUID());
+                        entryOrder.setOrderReference(1234);
                         entryOrder.setType(signal);
                         entryOrder.setPrice(currentTick.getValue());
                         entryOrder.setStatus(TradeOrderStatus.PENDING);
