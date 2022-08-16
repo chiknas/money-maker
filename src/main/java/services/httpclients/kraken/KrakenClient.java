@@ -10,6 +10,7 @@ import services.httpclients.kraken.postrequestobjects.addorder.KrakenOrderDirect
 import services.httpclients.kraken.postrequestobjects.addorder.KrakenOrderType;
 import services.httpclients.kraken.response.addorder.AddOrderResponse;
 import services.httpclients.kraken.response.balance.BalanceResponse;
+import services.httpclients.kraken.response.orderinfo.OrderInfoResponse;
 import services.httpclients.kraken.response.ticker.TickerPairResponse;
 import services.httpclients.kraken.response.trades.TradesResponse;
 import services.strategies.tradingstrategies.TradingStrategy;
@@ -100,5 +101,22 @@ public class KrakenClient extends AbstractClient {
                 .flatMap(request -> super.send(request, AddOrderResponse.class));
         addOrderResponse.ifPresent(response -> logErrors(response.getError()));
         return addOrderResponse;
+    }
+
+    /**
+     * Returns the current state of the specified order during the specified transaction.
+     * We get the transaction id and the order id when we create the order.
+     */
+    public Optional<OrderInfoResponse> getOrderInfo(String transactionId, UUID orderReference) {
+        String path = "/0/private/QueryOrders";
+        String nonce = krakenAuthentication.getNonce();
+        String data = "nonce=" + nonce + "&" +
+                "txid=" + transactionId + "&" +
+                "userref=" + orderReference;
+
+        Optional<OrderInfoResponse> orderInfoResponse = postRequest(data, path, krakenAuthentication.getSecurityHeaders(path, nonce, data))
+                .flatMap(request -> super.send(request, OrderInfoResponse.class));
+        orderInfoResponse.ifPresent(response -> logErrors(response.getError()));
+        return orderInfoResponse;
     }
 }

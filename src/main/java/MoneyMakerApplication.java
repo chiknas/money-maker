@@ -89,9 +89,6 @@ public class MoneyMakerApplication {
 
                     // only run when the timeframe we are interested in is full with prices.
                     if (timeframe.isFull()) {
-
-                        // check open trades and close if exit strategy says so
-
                         // for each loop of all open trades from this strategy and try to check if they need closing.
                         tradeService.getOpenTradesByStrategy(tradingStrategy.name()).forEach(trade -> {
                             exitStrategy.strategy().apply(trade.getId(), timeframe).ifPresent(closeTradeSignal -> {
