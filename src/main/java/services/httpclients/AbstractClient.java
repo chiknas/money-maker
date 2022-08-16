@@ -39,7 +39,7 @@ public abstract class AbstractClient {
     /**
      * Generates a GET request for the specified path.
      */
-    public Optional<HttpRequest> getRequest(String path, String... headers) {
+    protected Optional<HttpRequest> getRequest(String path, String... headers) {
         try {
             return Optional.of(getRequestBuilder(path, headers)
                     .GET()
@@ -53,7 +53,7 @@ public abstract class AbstractClient {
     /**
      * Generates a POST request for the specified path.
      */
-    public Optional<HttpRequest> postRequest(String data, String path, String... headers) {
+    protected Optional<HttpRequest> postRequest(String data, String path, String... headers) {
         try {
             return Optional.of(getRequestBuilder(path, headers)
                     .POST(HttpRequest.BodyPublishers.ofString(data))
@@ -67,20 +67,26 @@ public abstract class AbstractClient {
     /**
      * Send a request and returns the body of the response as string.
      */
-    public Optional<String> send(HttpRequest request) {
+    protected Optional<String> send(HttpRequest request) {
         return send(request, String.class);
     }
 
     /**
      * Sends the provided request and returns the response body mapped to the specified class
      */
-    public <T> Optional<T> send(HttpRequest request, Class<T> responseType) {
+    protected <T> Optional<T> send(HttpRequest request, Class<T> responseType) {
         try {
             String body = httpClient.send(request, HttpResponse.BodyHandlers.ofString()).body();
             return Optional.of(String.class.equals(responseType) ? responseType.cast(body) : gson.fromJson(body, responseType));
         } catch (IOException | InterruptedException e) {
             log.error(e.getMessage(), e);
             return Optional.empty();
+        }
+    }
+
+    protected void logErrors(List<String> errors) {
+        if (!errors.isEmpty()) {
+            log.error(errors.toString());
         }
     }
 

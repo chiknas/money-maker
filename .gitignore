@@ -43,7 +43,7 @@ buildNumber.properties
 .env*
 
 # Docker files
-database/
+data/
 
 # Mock data files
 *.csv
