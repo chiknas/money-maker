@@ -47,7 +47,8 @@ public class MoneyMakerDatabaseSchema extends TableSetSchema {
                                 column("cost", DECIMAL, 100).nullable(),
                                 // if the trade is currently open/closed/pending
                                 column("status", STRING, 19),
-                                column("volume", BIG_INTEGER, 19)
+                                column("volume", BIG_INTEGER, 19),
+                                column("volume_exec", BIG_INTEGER, 19).nullable()
                         )
                 )
         );

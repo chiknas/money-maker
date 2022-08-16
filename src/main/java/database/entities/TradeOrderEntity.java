@@ -54,6 +54,10 @@ public class TradeOrderEntity {
     @Column(name = "volume")
     private BigDecimal volume;
 
+    // how much of the asset we actually got
+    @Column(name = "volume_exec")
+    private BigDecimal volumeExec;
+
     // the price of the pair we traded on
     @Column(name = "price")
     private BigDecimal price;
