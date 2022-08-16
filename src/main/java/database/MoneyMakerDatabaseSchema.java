@@ -35,13 +35,16 @@ public class MoneyMakerDatabaseSchema extends TableSetSchema {
                         ),
                         table("trade_order").columns(
                                 column("id", BIG_INTEGER).autoNumbered(1),
-                                column("order_reference", STRING, 100),
+                                // UUID that identifies this order
+                                column("order_reference", STRING, 36),
+                                // transaction id this order was executed under
+                                column("order_transaction", STRING, 100),
                                 column("type", STRING, 10),
                                 column("asset_code", STRING, 10),
-                                column("price", DECIMAL, 100),
+                                column("price", DECIMAL, 100).nullable(),
                                 // LocalDateTime timestamp
                                 column("time", BIG_INTEGER, 19),
-                                column("cost", DECIMAL, 100),
+                                column("cost", DECIMAL, 100).nullable(),
                                 // if the trade is currently open/closed/pending
                                 column("status", STRING, 19),
                                 column("volume", BIG_INTEGER, 19)

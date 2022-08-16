@@ -4,16 +4,15 @@ import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.google.inject.util.Types;
 import database.DatabaseModule;
-import database.entities.TradeEntity;
 import database.entities.TradeOrderEntity;
 import database.entities.TradeOrderStatus;
+import lombok.extern.slf4j.Slf4j;
+import services.BannerService;
 import services.httpclients.HttpClientModule;
 import services.httpclients.kraken.KrakenClient;
 import services.httpclients.kraken.KrakenModule;
 import services.httpclients.kraken.response.trades.TradeDetails;
 import services.httpclients.kraken.response.trades.TradesResponse;
-import lombok.extern.slf4j.Slf4j;
-import services.BannerService;
 import services.strategies.TradingStrategiesModule;
 import services.strategies.exitstrategies.ExitStrategy;
 import services.strategies.tradingstrategies.TradingStrategy;
@@ -96,7 +95,7 @@ public class MoneyMakerApplication {
                         tradeService.getOpenTradesByStrategy(tradingStrategy.name()).forEach(trade -> {
                             exitStrategy.strategy().apply(trade.getId(), timeframe).ifPresent(closeTradeSignal -> {
                                 TradeOrderEntity exitOrder = new TradeOrderEntity();
-                                exitOrder.setOrderReference(UUID.randomUUID().toString());
+                                exitOrder.setOrderReference(UUID.randomUUID());
                                 exitOrder.setType(closeTradeSignal);
                                 exitOrder.setPrice(currentPrice);
                                 exitOrder.setVolume(BigDecimal.TEN);
@@ -107,31 +106,14 @@ public class MoneyMakerApplication {
 
                                 trade.setExitOrder(exitOrder);
 
-                                tradeService.trade(trade);
+                                tradeService.save(trade);
                             });
                         });
 
                         // open new trades based on the trading strategy
                         tradingStrategy.strategy().apply(timeframe)
                                 // react to the specified trading signal
-                                .ifPresent(signal -> {
-                                    TradeOrderEntity entryOrder = new TradeOrderEntity();
-                                    entryOrder.setOrderReference(UUID.randomUUID().toString());
-                                    entryOrder.setType(signal);
-                                    entryOrder.setPrice(currentPrice);
-                                    entryOrder.setVolume(BigDecimal.TEN);
-                                    entryOrder.setTime(LocalDateTime.now());
-                                    entryOrder.setStatus(TradeOrderStatus.PENDING);
-                                    entryOrder.setAssetCode(assetCode);
-                                    entryOrder.setCost(BigDecimal.ZERO);
-
-                                    TradeEntity trade = new TradeEntity();
-                                    trade.setEntryStrategy(tradingStrategy.name());
-                                    trade.setPeriodLength(tradingStrategy.periodLength());
-                                    trade.setEntryOrder(entryOrder);
-
-                                    tradeService.trade(trade);
-                                });
+                                .ifPresent(signal -> tradeService.openTrade(assetCode, signal, tradingStrategy));
                     }
                 }
             }), 2, tradingStrategy.periodLength().getSeconds(), TimeUnit.SECONDS);

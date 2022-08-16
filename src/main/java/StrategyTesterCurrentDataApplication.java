@@ -4,12 +4,12 @@ import database.DatabaseModule;
 import database.entities.TradeEntity;
 import database.entities.TradeOrderEntity;
 import database.entities.TradeOrderStatus;
+import lombok.extern.slf4j.Slf4j;
 import services.httpclients.HttpClientModule;
 import services.httpclients.kraken.KrakenClient;
 import services.httpclients.kraken.KrakenModule;
 import services.httpclients.kraken.response.trades.TradeDetails;
 import services.httpclients.kraken.response.trades.TradesResponse;
-import lombok.extern.slf4j.Slf4j;
 import services.strategies.TradingStrategiesModule;
 import services.strategies.exitstrategies.ExitStrategy;
 import services.strategies.exitstrategies.TrailingStopExitStrategy;
@@ -79,7 +79,7 @@ public class StrategyTesterCurrentDataApplication {
                     log.info("    ExitTime: " + currentTick.getTime().toString());
 
                     TradeOrderEntity exitOrder = new TradeOrderEntity();
-                    exitOrder.setOrderReference(UUID.randomUUID().toString());
+                    exitOrder.setOrderReference(UUID.randomUUID());
                     exitOrder.setType(closeTradeSignal);
                     exitOrder.setPrice(currentTick.getValue());
                     exitOrder.setVolume(BigDecimal.TEN);
@@ -96,7 +96,7 @@ public class StrategyTesterCurrentDataApplication {
                     BigDecimal divisor = currentTick.getValue().add(trade.getEntryOrder().getPrice()).divide(BigDecimal.valueOf(2), 10, RoundingMode.HALF_EVEN);
                     trade.setProfit(margin.divide(divisor, 10, RoundingMode.HALF_EVEN).multiply(BigDecimal.valueOf(100)));
 
-                    tradeService.trade(trade);
+                    tradeService.save(trade);
                 });
             });
 
@@ -106,7 +106,7 @@ public class StrategyTesterCurrentDataApplication {
                     .ifPresent(signal -> {
 
                         TradeOrderEntity entryOrder = new TradeOrderEntity();
-                        entryOrder.setOrderReference(UUID.randomUUID().toString());
+                        entryOrder.setOrderReference(UUID.randomUUID());
                         entryOrder.setType(signal);
                         entryOrder.setPrice(currentTick.getValue());
                         entryOrder.setStatus(TradeOrderStatus.PENDING);
@@ -121,7 +121,7 @@ public class StrategyTesterCurrentDataApplication {
                         trade.setPeriodLength(strategy.periodLength());
                         trade.setEntryOrder(entryOrder);
 
-                        tradeService.trade(trade);
+                        tradeService.save(trade);
                     });
         }
     }
