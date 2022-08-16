@@ -9,7 +9,7 @@ import java.util.Optional;
 
 @Getter
 @AllArgsConstructor
-@PropertySuffix("strategy.3EmaCrossover")
+@PropertySuffix("strategy.entry.3EmaCrossover")
 public class ThreeEmaCrossoverStrategyProperties {
 
     @Getter(AccessLevel.NONE)

@@ -113,7 +113,7 @@ public class MoneyMakerApplication {
                         // open new trades based on the trading strategy
                         tradingStrategy.strategy().apply(timeframe)
                                 // react to the specified trading signal
-                                .ifPresent(signal -> tradeService.openTrade(assetCode, signal, tradingStrategy));
+                                .ifPresent(signal -> tradeService.openTrade(currentPrice, signal, tradingStrategy));
                     }
                 }
             }), 2, tradingStrategy.periodLength().getSeconds(), TimeUnit.SECONDS);

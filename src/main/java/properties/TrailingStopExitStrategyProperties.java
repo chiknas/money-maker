@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 
 @Getter
 @AllArgsConstructor
-@PropertySuffix("exit.strategy.TrailingStop")
+@PropertySuffix("strategy.exit.TrailingStop")
 public class TrailingStopExitStrategyProperties {
     private BigDecimal distance;
 }

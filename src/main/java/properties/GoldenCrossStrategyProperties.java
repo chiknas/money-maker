@@ -9,7 +9,7 @@ import java.util.Optional;
 
 @Getter
 @AllArgsConstructor
-@PropertySuffix("strategy.GoldenCross")
+@PropertySuffix("strategy.entry.GoldenCross")
 public class GoldenCrossStrategyProperties {
 
     @Getter(AccessLevel.NONE)
