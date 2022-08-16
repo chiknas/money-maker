@@ -76,12 +76,13 @@ public class TradeService {
                                     entryOrder.setOrderReference(orderReference);
                                     entryOrder.setOrderTransaction(orderTransactionId);
                                     entryOrder.setType(tradingSignal);
-                                    entryOrder.setPrice(null);
                                     entryOrder.setVolume(volume);
                                     entryOrder.setTime(LocalDateTime.now());
                                     entryOrder.setStatus(TradeOrderStatus.PENDING);
                                     entryOrder.setAssetCode(properties.getAssetCode());
                                     entryOrder.setCost(null);
+                                    entryOrder.setPrice(null);
+                                    entryOrder.setVolumeExec(null);
 
                                     TradeEntity trade = new TradeEntity();
                                     trade.setEntryStrategy(tradingStrategy.name());

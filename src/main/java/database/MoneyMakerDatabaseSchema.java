@@ -44,7 +44,10 @@ public class MoneyMakerDatabaseSchema extends TableSetSchema {
                                 column("price", DECIMAL, 100).nullable(),
                                 // LocalDateTime timestamp
                                 column("time", BIG_INTEGER, 19),
+                                // total cash we used for this order
                                 column("cost", DECIMAL, 100).nullable(),
+                                // total fee we paid for this order
+                                column("fee", DECIMAL, 100).nullable(),
                                 // if the trade is currently open/closed/pending
                                 column("status", STRING, 19),
                                 column("volume", BIG_INTEGER, 19),

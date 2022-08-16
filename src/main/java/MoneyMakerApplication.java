@@ -18,6 +18,7 @@ import services.httpclients.kraken.response.trades.TradesResponse;
 import services.strategies.TradingStrategiesModule;
 import services.strategies.exitstrategies.ExitStrategy;
 import services.strategies.tradingstrategies.TradingStrategy;
+import services.trades.OrderService;
 import services.trades.TradeService;
 import valueobjects.timeframe.Tick;
 import valueobjects.timeframe.Timeframe;
@@ -38,6 +39,7 @@ public class MoneyMakerApplication {
 
         Injector injector = Guice.createInjector(new HttpClientModule(), new KrakenModule(), new DatabaseModule(), new TradingStrategiesModule());
         KrakenClient krakenClient = injector.getInstance(KrakenClient.class);
+        OrderService orderService = injector.getInstance(OrderService.class);
         TradeService tradeService = injector.getInstance(TradeService.class);
         PropertiesService propertiesService = injector.getInstance(PropertiesService.class);
 
@@ -89,6 +91,11 @@ public class MoneyMakerApplication {
 
                     // only run when the timeframe we are interested in is full with prices.
                     if (timeframe.isFull()) {
+
+                        // first update our pending orders. this will update our database with the current state of our pending orders.
+                        // if they have been executed it will change their status and enrich them with all the details of the fulfilled order.
+                        orderService.syncPendingOrders();
+
                         // for each loop of all open trades from this strategy and try to check if they need closing.
                         tradeService.getOpenTradesByStrategy(tradingStrategy.name()).forEach(trade -> {
                             exitStrategy.strategy().apply(trade.getId(), timeframe).ifPresent(closeTradeSignal -> {

@@ -66,6 +66,10 @@ public class TradeOrderEntity {
     @Column(name = "cost")
     private BigDecimal cost;
 
+    // total fee we paid for this order
+    @Column(name = "fee")
+    private BigDecimal fee;
+
     // the specific time this trade occurred
     @Column(name = "time")
     private BigInteger time;
