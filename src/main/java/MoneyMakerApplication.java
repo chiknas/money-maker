@@ -40,8 +40,7 @@ public class MoneyMakerApplication {
         TradeService tradeService = injector.getInstance(TradeService.class);
         PropertiesService propertiesService = injector.getInstance(PropertiesService.class);
 
-        String assetDetailCode = propertiesService.loadProperties(TradeProperties.class).map(TradeProperties::getDetailAssetCode)
-                .orElseThrow();
+        TradeProperties tradeProperties = propertiesService.loadProperties(TradeProperties.class).orElseThrow();
 
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
@@ -54,8 +53,6 @@ public class MoneyMakerApplication {
 
         // initialize each strategy
         enabledTradingStrategies.forEach(tradingStrategy -> {
-            Timeframe timeframe = new Timeframe(tradingStrategy.timeframeSize());
-
             ExitStrategy exitStrategy = exitStrategies.stream()
                     .filter(strategy -> tradingStrategy.exitStrategyName().equals(strategy.name())).findFirst()
                     .orElseThrow(() -> new IllegalStateException(
@@ -64,22 +61,13 @@ public class MoneyMakerApplication {
             log.info(tradingStrategy.name() + ": Found exit strategy with name " + exitStrategy.name());
 
             // initialize timeframe with previous trades
-            Optional<TradesResponse> tradesResponse = krakenClient.getHistoricData(tradingStrategy.periodLength());
-            tradesResponse.ifPresent(response -> {
-                List<TradeDetails> tradeDetails = response.getResult().getTradeDetails(assetDetailCode);
-                tradeDetails.stream().sorted(Comparator.comparing(TradeDetails::getTime))
-                        .collect(Collectors.toList())
-                        .forEach(detail -> {
-                            Tick ticker = new Tick(detail.getTime(), detail.getPrice());
-                            timeframe.addTick(ticker);
-                        });
-            });
+            Timeframe timeframe = getInitialStrategyTimeframe(krakenClient, tradingStrategy, tradeProperties.getDetailAssetCode());
             log.info(tradingStrategy.name() + ": Initialized trading timeframe.");
 
             // scheduler to run the strategy on the specified period
             scheduler.scheduleAtFixedRate(() -> krakenClient.getTickerInfo().ifPresent(tickerPairResponse -> {
 
-                BigDecimal currentPrice = tickerPairResponse.getResult().get(assetDetailCode).getCurrentPrice();
+                BigDecimal currentPrice = tickerPairResponse.getResult().get(tradeProperties.getDetailAssetCode()).getCurrentPrice();
                 boolean isPriceChanged = timeframe.getTicks().isEmpty() || !timeframe.getTicks().getLast().getValue().equals(currentPrice);
 
                 // only run the strategy on price change. no point running it for the same price twice.
@@ -89,31 +77,45 @@ public class MoneyMakerApplication {
                     // only run when the timeframe we are interested in is full with prices.
                     if (timeframe.isFull()) {
 
-                        // first update our pending orders. this will update our database with the current state of our pending orders.
+                        // STEP1: first update our pending orders. this will update our database with the current state of our pending orders.
                         // if they have been executed it will change their status and enrich them with all the details of the fulfilled order.
                         orderService.syncPendingOrders();
 
-                        // go through all open trades by this strategy
+                        // STEP2: go through all open trades by this strategy and try to exit to gain some money
                         tradeService.getOpenTradesByStrategy(tradingStrategy.name()).forEach(trade ->
-                                // check if we can exit the trade make some money
                                 exitStrategy.strategy().apply(trade.getId(), timeframe).ifPresent(closeTradeSignal ->
                                         // close the trade with a new order
-                                        tradeService.closeTrade(trade, closeTradeSignal))
+                                        tradeService.closeTrade(currentPrice, trade, closeTradeSignal))
                         );
 
-                        // open new trades based on the trading strategy
+                        // STEP3: open new trades based on the trading strategy
                         tradingStrategy.strategy().apply(timeframe)
-                                // react to the specified trading signal
                                 .ifPresent(signal -> tradeService.openTrade(currentPrice, signal, tradingStrategy));
                     }
                 }
             }), 2, tradingStrategy.periodLength().getSeconds(), TimeUnit.SECONDS);
-            log.info(tradingStrategy.name() + ": Trading session started! Looking for a good ticker to trade: " + "GBP/BTC");
+            log.info(tradingStrategy.name() + ": Trading session started! Looking for a good ticker to trade: " + tradeProperties.getAssetCode());
         });
 
         if (enabledTradingStrategies.isEmpty()) {
             log.error("No trading strategies found enabled. You can enable strategies in the application.properties. See ya!");
         }
+    }
+
+    // Generates a time frame with the current history/data of the asset pair.
+    private static Timeframe getInitialStrategyTimeframe(KrakenClient krakenClient, TradingStrategy tradingStrategy, String assetDetailCode) {
+        Timeframe timeframe = new Timeframe(tradingStrategy.timeframeSize());
+        Optional<TradesResponse> tradesResponse = krakenClient.getHistoricData(tradingStrategy.periodLength());
+        tradesResponse.ifPresent(response -> {
+            List<TradeDetails> tradeDetails = response.getResult().getTradeDetails(assetDetailCode);
+            tradeDetails.stream().sorted(Comparator.comparing(TradeDetails::getTime))
+                    .collect(Collectors.toList())
+                    .forEach(detail -> {
+                        Tick ticker = new Tick(detail.getTime(), detail.getPrice());
+                        timeframe.addTick(ticker);
+                    });
+        });
+        return timeframe;
     }
 
     public static <T> Set<T> loadServices(Class<T> type, Injector injector) {

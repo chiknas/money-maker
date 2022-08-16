@@ -99,11 +99,18 @@ public class TradeService {
      * Will post an order to complete the trade and hopefully make some money.
      * It will try to sell/buy the same volume of coin we sold/bought when we entered this trade.
      */
-    public void closeTrade(TradeEntity trade, TradingStrategy.TradingSignal tradingSignal) {
+    public void closeTrade(BigDecimal price, TradeEntity trade, TradingStrategy.TradingSignal tradingSignal) {
         UUID orderReference = UUID.randomUUID();
 
         // since we are closing a trade we want to exit with the same amount we entered if possible.
-        BigDecimal volume = trade.getEntryOrder().getVolumeExec();
+        // other trades might have changed the available cash/coins so check if we have the exec volume in our balance before we send the order.
+        BigDecimal volumeBalance = client.getBalance().map(balanceResponse ->
+                        TradingStrategy.TradingSignal.BUY.equals(tradingSignal)
+                                ? balanceResponse.getResult().getAssetBalance(properties.getBuyAssetCode()).divide(price, 10, RoundingMode.HALF_EVEN)
+                                : balanceResponse.getResult().getAssetBalance(properties.getSellAssetCode()))
+                .orElseThrow(() -> new IllegalStateException("Api query to get account balances failed. Trade cancelled."));
+        BigDecimal volumeExec = trade.getEntryOrder().getVolumeExec();
+        BigDecimal volume = volumeExec.compareTo(volumeBalance) > 0 ? volumeBalance : volumeExec;
 
         client.postMarketOrder(orderReference, volume, tradingSignal)
                 .ifPresentOrElse(
