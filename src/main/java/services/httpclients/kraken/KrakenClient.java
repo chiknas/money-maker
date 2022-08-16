@@ -9,6 +9,7 @@ import services.httpclients.kraken.postrequestobjects.addorder.AddOrderPostReque
 import services.httpclients.kraken.postrequestobjects.addorder.KrakenOrderDirection;
 import services.httpclients.kraken.postrequestobjects.addorder.KrakenOrderType;
 import services.httpclients.kraken.response.addorder.AddOrderResponse;
+import services.httpclients.kraken.response.balance.BalanceResponse;
 import services.httpclients.kraken.response.ticker.TickerPairResponse;
 import services.httpclients.kraken.response.trades.TradesResponse;
 import services.strategies.tradingstrategies.TradingStrategy;
@@ -45,11 +46,12 @@ public class KrakenClient extends AbstractClient {
     }
 
     // https://docs.kraken.com/rest/#tag/User-Data/operation/getAccountBalance
-    public Optional<String> getBalance() {
+    public Optional<BalanceResponse> getBalance() {
         String path = "/0/private/Balance";
         String nonce = krakenAuthentication.getNonce();
         String data = "nonce=" + nonce;
-        return postRequest(data, path, krakenAuthentication.getSecurityHeaders(path, nonce, data)).flatMap(super::send);
+        return postRequest(data, path, krakenAuthentication.getSecurityHeaders(path, nonce, data))
+                .flatMap(request -> super.send(request, BalanceResponse.class));
     }
 
     // https://docs.kraken.com/rest/#tag/Market-Data/operation/getOHLCData
