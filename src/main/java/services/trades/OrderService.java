@@ -2,6 +2,7 @@ package services.trades;
 
 import com.google.inject.Inject;
 import database.daos.OrderDao;
+import database.entities.TradeEntity;
 import database.entities.TradeOrderStatus;
 import services.httpclients.kraken.KrakenClient;
 import services.httpclients.kraken.response.OrderStatus;
@@ -11,11 +12,13 @@ public class OrderService {
 
     private final KrakenClient client;
     private final OrderDao orderDao;
+    private final TradeService tradeService;
 
     @Inject
-    public OrderService(OrderDao orderDao, KrakenClient client) {
+    public OrderService(OrderDao orderDao, KrakenClient client, TradeService tradeService) {
         this.orderDao = orderDao;
         this.client = client;
+        this.tradeService = tradeService;
     }
 
     /**
@@ -32,6 +35,13 @@ public class OrderService {
                         order.setCost(orderInfoDetails.getCost());
                         order.setFee(orderInfoDetails.getFee());
                         order.setVolumeExec(orderInfoDetails.getVolumeExec());
+
+                        // if this was an order that closed a trade update the profit
+                        tradeService.calculateTradeProfit(order.getTrade()).ifPresent(profit -> {
+                            TradeEntity trade = order.getTrade();
+                            trade.setProfit(profit);
+                            tradeService.save(trade);
+                        });
 
                         orderDao.save(order);
                     }

@@ -2,6 +2,7 @@ package services.strategies.exitstrategies;
 
 import database.entities.TradeEntity;
 import database.entities.TradeOrderEntity;
+import database.entities.TradeOrderType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -58,10 +59,11 @@ class TrailingStopExitStrategyTest {
         TradeOrderEntity tradeOrder = new TradeOrderEntity();
         tradeOrder.setTime(startTime);
         tradeOrder.setPrice(BigDecimal.valueOf(100));
-        tradeOrder.setType(TradingStrategy.TradingSignal.BUY);
+        tradeOrder.setTradingSignal(TradingStrategy.TradingSignal.BUY);
+        tradeOrder.setType(TradeOrderType.ENTRY);
 
         TradeEntity tradeEntity = new TradeEntity();
-        tradeEntity.setEntryOrder(tradeOrder);
+        tradeEntity.addOrder(tradeOrder);
         when(tradeService.getById(eq(BigInteger.valueOf(1)))).thenReturn(Optional.of(tradeEntity));
 
         Optional<TradingStrategy.TradingSignal> exitSignal = trailingStopExitStrategy.strategy().apply(BigInteger.valueOf(1), trailingStopSignalTriggerTimeframe);
@@ -81,10 +83,11 @@ class TrailingStopExitStrategyTest {
         TradeOrderEntity tradeOrder = new TradeOrderEntity();
         tradeOrder.setTime(startTime);
         tradeOrder.setPrice(BigDecimal.valueOf(70));
-        tradeOrder.setType(TradingStrategy.TradingSignal.SELL);
+        tradeOrder.setTradingSignal(TradingStrategy.TradingSignal.SELL);
+        tradeOrder.setType(TradeOrderType.ENTRY);
 
         TradeEntity tradeEntity = new TradeEntity();
-        tradeEntity.setEntryOrder(tradeOrder);
+        tradeEntity.addOrder(tradeOrder);
         when(tradeService.getById(eq(BigInteger.valueOf(1)))).thenReturn(Optional.of(tradeEntity));
 
         Optional<TradingStrategy.TradingSignal> exitSignal = trailingStopExitStrategy.strategy().apply(BigInteger.valueOf(1), trailingStopSignalTriggerTimeframe);
@@ -103,10 +106,11 @@ class TrailingStopExitStrategyTest {
         TradeOrderEntity tradeOrder = new TradeOrderEntity();
         tradeOrder.setTime(startTime);
         tradeOrder.setPrice(BigDecimal.valueOf(70));
-        tradeOrder.setType(TradingStrategy.TradingSignal.SELL);
+        tradeOrder.setTradingSignal(TradingStrategy.TradingSignal.SELL);
+        tradeOrder.setType(TradeOrderType.ENTRY);
 
         TradeEntity tradeEntity = new TradeEntity();
-        tradeEntity.setEntryOrder(tradeOrder);
+        tradeEntity.addOrder(tradeOrder);
         when(tradeService.getById(eq(BigInteger.valueOf(1)))).thenReturn(Optional.of(tradeEntity));
 
         Optional<TradingStrategy.TradingSignal> exitSignal = trailingStopExitStrategy.strategy().apply(BigInteger.valueOf(1), timeframe);

@@ -42,7 +42,7 @@ public class TrailingStopExitStrategy implements ExitStrategy {
             Optional<TrailingStopExitStrategyProperties> properties = propertiesService.loadProperties(TrailingStopExitStrategyProperties.class);
             BigDecimal distancePercentage = properties.map(TrailingStopExitStrategyProperties::getDistance).orElse(BigDecimal.valueOf(0.01));
 
-            TradingStrategy.TradingSignal tradeType = trade.getEntryOrder().getType();
+            TradingStrategy.TradingSignal tradeType = trade.getEntryOrder().getTradingSignal();
 
             Timeframe initialTrailingValuesTimeframe = new Timeframe(timeframe.size(), List.of(
                     new Tick(

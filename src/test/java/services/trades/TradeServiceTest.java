@@ -1,6 +1,10 @@
 package services.trades;
 
 import database.daos.TradeDao;
+import database.entities.TradeEntity;
+import database.entities.TradeOrderEntity;
+import database.entities.TradeOrderStatus;
+import database.entities.TradeOrderType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -14,6 +18,7 @@ import java.math.BigDecimal;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -21,7 +26,7 @@ import static org.mockito.Mockito.when;
 class TradeServiceTest {
 
     @Mock
-    private TradeDao transactionsDao;
+    private TradeDao tradeDao;
     @Mock
     private KrakenClient client;
     @Mock
@@ -31,7 +36,7 @@ class TradeServiceTest {
 
     @BeforeEach
     void setUp() {
-        transactionsDao = mock(TradeDao.class);
+        tradeDao = mock(TradeDao.class);
         client = mock(KrakenClient.class);
         propertiesService = mock(PropertiesService.class);
 
@@ -40,7 +45,7 @@ class TradeServiceTest {
                 "ZGBP", "XXBT", capitalAtRisk, false);
         when(propertiesService.loadProperties(eq(TradeProperties.class))).thenReturn(Optional.of(tradeProperties));
 
-        tradeService = new TradeService(transactionsDao, client, propertiesService);
+        tradeService = new TradeService(tradeDao, client, propertiesService);
     }
 
     @Test
@@ -48,6 +53,69 @@ class TradeServiceTest {
         // make sure this is always up to 10 digits to ensure:
         // https://docs.kraken.com/rest/#tag/User-Trading/operation/addOrder
         assertEquals(10, String.valueOf(tradeService.generateTradeReference()).length());
+    }
+
+    @Test
+    void calculateTradeProfitProfitable() {
+        TradeEntity trade = new TradeEntity();
+
+        // the cost will always be the cash we spent or got
+        // we paid 19000 to enter the market
+        TradeOrderEntity entryOrder = new TradeOrderEntity();
+        entryOrder.setCost(new BigDecimal(19000));
+        entryOrder.setType(TradeOrderType.ENTRY);
+        trade.addOrder(entryOrder);
+
+        // we got 20000 when we were getting out
+        TradeOrderEntity exitOrder = new TradeOrderEntity();
+        exitOrder.setCost(new BigDecimal(20000));
+        exitOrder.setType(TradeOrderType.EXIT);
+        exitOrder.setStatus(TradeOrderStatus.EXECUTED);
+        trade.addOrder(exitOrder);
+
+        Optional<BigDecimal> profit = tradeService.calculateTradeProfit(trade);
+        assertTrue(profit.isPresent());
+        assertEquals(new BigDecimal(1000), profit.get());
+    }
+
+    @Test
+    void calculateTradeProfitLoss() {
+        TradeEntity trade = new TradeEntity();
+
+        // the cost will always be the cash we spent or got
+        // we paid 20000 to enter the market
+        TradeOrderEntity entryOrder = new TradeOrderEntity();
+        entryOrder.setCost(new BigDecimal(20000));
+        entryOrder.setType(TradeOrderType.ENTRY);
+        entryOrder.setStatus(TradeOrderStatus.EXECUTED);
+        trade.addOrder(entryOrder);
+
+        // we got 15000 when we were getting out
+        TradeOrderEntity exitOrder = new TradeOrderEntity();
+        exitOrder.setCost(new BigDecimal(15000));
+        exitOrder.setType(TradeOrderType.EXIT);
+        exitOrder.setStatus(TradeOrderStatus.EXECUTED);
+        trade.addOrder(exitOrder);
+
+        // we lost 5000
+        Optional<BigDecimal> profit = tradeService.calculateTradeProfit(trade);
+        assertTrue(profit.isPresent());
+        assertEquals(new BigDecimal(-5000), profit.get());
+    }
+
+    @Test
+    void calculateTradeProfitOpenTrade() {
+        TradeEntity trade = new TradeEntity();
+
+        // the cost will always be the cash we spent or got
+        TradeOrderEntity entryOrder = new TradeOrderEntity();
+        entryOrder.setCost(new BigDecimal(20000));
+        entryOrder.setType(TradeOrderType.ENTRY);
+        trade.addOrder(entryOrder);
+
+        // there no exit order so the trade is still open. profit should be empty
+        Optional<BigDecimal> profit = tradeService.calculateTradeProfit(trade);
+        assertTrue(profit.isEmpty());
     }
 
     @Test

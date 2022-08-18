@@ -38,13 +38,18 @@ public class TradeOrderEntity {
 
     // the type of trade (BUY or SELL)
     @Enumerated(EnumType.STRING)
-    @Column(name = "type")
-    private TradingStrategy.TradingSignal type;
+    @Column(name = "trading_signal")
+    private TradingStrategy.TradingSignal tradingSignal;
 
     // if the order has been fulfilled or pending
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
     private TradeOrderStatus status;
+
+    // the relationship with the trade its associated with.
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type")
+    private TradeOrderType type;
 
     // how much of the asset we order
     @Column(name = "volume")
@@ -69,6 +74,10 @@ public class TradeOrderEntity {
     // the specific time this trade occurred
     @Column(name = "time")
     private BigInteger time;
+
+    @ManyToOne
+    @JoinColumn(name = "trade_id", nullable = false)
+    private TradeEntity trade;
 
     public LocalDateTime getTime() {
         return TimeService.getLocalDateTimeNano(String.valueOf(time));

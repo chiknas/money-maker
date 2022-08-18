@@ -85,7 +85,7 @@ public class MoneyMakerApplication {
                         tradeService.getOpenTradesByStrategy(tradingStrategy.name()).forEach(trade ->
                                 exitStrategy.strategy().apply(trade.getId(), timeframe).ifPresent(closeTradeSignal ->
                                         // close the trade with a new order
-                                        tradeService.closeTrade(currentPrice, trade, closeTradeSignal))
+                                        tradeService.closeTrade(currentPrice, trade))
                         );
 
                         // STEP3: open new trades based on the trading strategy

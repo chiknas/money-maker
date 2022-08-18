@@ -90,7 +90,7 @@ public class StrategyTesterHistoricDataApplication {
 
                             TradeOrderEntity exitOrder = new TradeOrderEntity();
                             exitOrder.setOrderReference(1234);
-                            exitOrder.setType(closeTradeSignal);
+                            exitOrder.setTradingSignal(closeTradeSignal);
                             exitOrder.setPrice(currentTick.getValue());
                             exitOrder.setVolume(BigDecimal.TEN);
                             exitOrder.setTime(currentTick.getTime());
@@ -98,9 +98,9 @@ public class StrategyTesterHistoricDataApplication {
                             exitOrder.setAssetCode(assetCode);
                             exitOrder.setCost(BigDecimal.ZERO);
 
-                            trade.setExitOrder(exitOrder);
+                            trade.addOrder(exitOrder);
 
-                            BigDecimal margin = trade.getEntryOrder().getType().equals(TradingStrategy.TradingSignal.BUY)
+                            BigDecimal margin = trade.getEntryOrder().getTradingSignal().equals(TradingStrategy.TradingSignal.BUY)
                                     ? currentTick.getValue().subtract(trade.getEntryOrder().getPrice())
                                     : trade.getEntryOrder().getPrice().subtract(currentTick.getValue());
                             BigDecimal divisor = currentTick.getValue().add(trade.getEntryOrder().getPrice()).divide(BigDecimal.valueOf(2), 10, RoundingMode.HALF_EVEN);
@@ -117,7 +117,7 @@ public class StrategyTesterHistoricDataApplication {
 
                                 TradeOrderEntity entryOrder = new TradeOrderEntity();
                                 entryOrder.setOrderReference(1234);
-                                entryOrder.setType(signal);
+                                entryOrder.setTradingSignal(signal);
                                 entryOrder.setPrice(currentTick.getValue());
                                 entryOrder.setStatus(TradeOrderStatus.PENDING);
                                 entryOrder.setVolume(BigDecimal.TEN);
@@ -129,7 +129,7 @@ public class StrategyTesterHistoricDataApplication {
                                 trade.setEntryStrategy(strategy.name());
                                 trade.setExitStrategy(exitStrategy.name());
                                 trade.setPeriodLength(strategy.periodLength());
-                                trade.setEntryOrder(entryOrder);
+                                trade.addOrder(entryOrder);
 
                                 tradeService.save(trade);
                             });

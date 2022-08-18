@@ -7,6 +7,9 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 @Entity
 @Getter
@@ -27,13 +30,8 @@ public class TradeEntity {
     @Column(name = "exit_strategy", nullable = false)
     private String exitStrategy;
 
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "entry_order_id", referencedColumnName = "id", nullable = false)
-    private TradeOrderEntity entryOrder;
-
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "exit_order_id", referencedColumnName = "id")
-    private TradeOrderEntity exitOrder;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "trade")
+    private List<TradeOrderEntity> orders = new ArrayList<>();
 
     @Column(name = "profit")
     private BigDecimal profit;
@@ -44,5 +42,20 @@ public class TradeEntity {
 
     public void setPeriodLength(Duration periodLength) {
         this.periodLength = periodLength.toString();
+    }
+
+    public List<TradeOrderEntity> addOrder(TradeOrderEntity order) {
+        order.setTrade(this);
+        this.orders.add(order);
+        return this.orders;
+    }
+
+    public Optional<TradeOrderEntity> getExitOrder() {
+        return orders.stream().filter(order -> TradeOrderType.EXIT.equals(order.getType())).findFirst();
+    }
+
+    public TradeOrderEntity getEntryOrder() {
+        return orders.stream().filter(order -> TradeOrderType.ENTRY.equals(order.getType()))
+                .findFirst().orElseThrow(() -> new IllegalStateException("Trade with id: " + this.id + " , was found without an entry order."));
     }
 }

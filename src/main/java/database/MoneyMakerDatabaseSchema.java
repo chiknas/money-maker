@@ -26,20 +26,17 @@ public class MoneyMakerDatabaseSchema extends TableSetSchema {
                                 column("period_length", STRING, 19),
                                 // strategy id of the exit_strategy table with more details about the exit strategy to be used for this trade
                                 column("exit_strategy", STRING, 100),
-                                // the order id that opened this trade
-                                column("entry_order_id", BIG_INTEGER),
-                                // the order id that closed this trade
-                                column("exit_order_id", BIG_INTEGER).nullable(),
                                 // how much we made from this trade
                                 column("profit", DECIMAL, 100, 10).nullable()
                         ),
                         table("trade_order").columns(
                                 column("id", BIG_INTEGER).autoNumbered(1),
-                                // UUID that identifies this order
+                                column("trade_id", BIG_INTEGER),
+                                // UUID that identifies this order for the api
                                 column("order_reference", INTEGER, 10),
                                 // transaction id this order was executed under
                                 column("order_transaction", STRING, 100),
-                                column("type", STRING, 10),
+                                column("trading_signal", STRING, 10),
                                 column("asset_code", STRING, 10),
                                 column("price", DECIMAL, 100, 10).nullable(),
                                 // LocalDateTime timestamp
@@ -50,6 +47,7 @@ public class MoneyMakerDatabaseSchema extends TableSetSchema {
                                 column("fee", DECIMAL, 100, 10).nullable(),
                                 // if the trade is currently open/closed/pending
                                 column("status", STRING, 19),
+                                column("type", STRING, 19),
                                 column("volume", DECIMAL, 100, 10),
                                 column("volume_exec", DECIMAL, 100, 10).nullable()
                         )
