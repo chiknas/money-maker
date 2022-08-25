@@ -26,6 +26,9 @@ public class AddOrderPostRequestBody extends PostRequestBody {
     // Validate inputs only. Do not submit order.
     private Boolean validate;
 
+    // Leverage to use for this trade. ex. 2:1 = 2x
+    private String leverage;
+
     /**
      * Kraken post request value input format.
      * TODO: refactor this into a common method somewhere (superclass maybe) so we dont have to override the toString
@@ -35,6 +38,7 @@ public class AddOrderPostRequestBody extends PostRequestBody {
     public String toString() {
         return "nonce=" + getNonce() +
                 "&userref=" + orderReference +
+                (leverage != null ? "&leverage=" + leverage : "") +
                 "&ordertype=" + orderType.getOrderType() +
                 "&type=" + orderDirection.getDirection() +
                 "&volume=" + volume +

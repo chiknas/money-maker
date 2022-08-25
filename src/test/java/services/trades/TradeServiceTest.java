@@ -42,7 +42,7 @@ class TradeServiceTest {
 
         BigDecimal capitalAtRisk = new BigDecimal("0.2");
         TradeProperties tradeProperties = new TradeProperties("XBTGBP", "XXBTZGBP",
-                "ZGBP", "XXBT", capitalAtRisk, false);
+                "ZGBP", "XXBT", capitalAtRisk, false, "1:1");
         when(propertiesService.loadProperties(eq(TradeProperties.class))).thenReturn(Optional.of(tradeProperties));
 
         tradeService = new TradeService(tradeDao, client, propertiesService);

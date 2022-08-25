@@ -88,6 +88,7 @@ public class KrakenClient extends AbstractClient {
         AddOrderPostRequestBody postRequestBody = AddOrderPostRequestBody.builder()
                 .nonce(nonce)
                 .orderReference(orderReference)
+                .leverage(tradeProperties.usesLeverage() ? tradeProperties.getLeverage() : null)
                 .pair(tradeProperties.getAssetCode())
                 .orderType(KrakenOrderType.MARKET)
                 .orderDirection(orderDirection)
