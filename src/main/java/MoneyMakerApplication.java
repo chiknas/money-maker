@@ -11,6 +11,7 @@ import services.BannerService;
 import services.httpclients.HttpClientModule;
 import services.httpclients.kraken.KrakenClient;
 import services.httpclients.kraken.KrakenModule;
+import services.httpclients.kraken.response.ticker.TickerPairResponse;
 import services.httpclients.kraken.response.trades.TradeDetails;
 import services.httpclients.kraken.response.trades.TradesResponse;
 import services.strategies.TradingStrategiesModule;
@@ -26,21 +27,25 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 @Slf4j
 public class MoneyMakerApplication {
 
+    private static KrakenClient krakenClient;
+    private static OrderService orderService;
+    private static TradeService tradeService;
+    private static TradeProperties tradeProperties;
+
     public static void main(String[] args) {
         new BannerService().printBanner();
 
         Injector injector = Guice.createInjector(new HttpClientModule(), new KrakenModule(), new DatabaseModule(), new TradingStrategiesModule());
-        KrakenClient krakenClient = injector.getInstance(KrakenClient.class);
-        OrderService orderService = injector.getInstance(OrderService.class);
-        TradeService tradeService = injector.getInstance(TradeService.class);
-        PropertiesService propertiesService = injector.getInstance(PropertiesService.class);
-
-        TradeProperties tradeProperties = propertiesService.loadProperties(TradeProperties.class).orElseThrow();
+        krakenClient = injector.getInstance(KrakenClient.class);
+        orderService = injector.getInstance(OrderService.class);
+        tradeService = injector.getInstance(TradeService.class);
+        tradeProperties = injector.getInstance(PropertiesService.class).loadProperties(TradeProperties.class).orElseThrow();
 
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
@@ -64,34 +69,15 @@ public class MoneyMakerApplication {
             Timeframe timeframe = getInitialStrategyTimeframe(krakenClient, tradingStrategy, tradeProperties.getDetailAssetCode());
             log.info(tradingStrategy.name() + ": Initialized trading timeframe.");
 
+            BiConsumer<Timeframe, TickerPairResponse> algorithm = tradingAlgorithm(tradingStrategy, exitStrategy);
+            log.info(tradingStrategy.name() + ": Initialized algorithm.");
+
             // scheduler to run the strategy on the specified period
             scheduler.scheduleAtFixedRate(() -> krakenClient.getTickerInfo().ifPresent(tickerPairResponse -> {
-
-                BigDecimal currentPrice = tickerPairResponse.getResult().get(tradeProperties.getDetailAssetCode()).getCurrentPrice();
-                boolean isPriceChanged = timeframe.getTicks().isEmpty() || !timeframe.getTicks().getLast().getValue().equals(currentPrice);
-
-                // only run the strategy on price change. no point running it for the same price twice.
-                if (isPriceChanged) {
-                    timeframe.addTick(currentPrice);
-
-                    // only run when the timeframe we are interested in is full with prices.
-                    if (timeframe.isFull()) {
-
-                        // STEP1: first update our pending orders. this will update our database with the current state of our pending orders.
-                        // if they have been executed it will change their status and enrich them with all the details of the fulfilled order.
-                        orderService.syncPendingOrders();
-
-                        // STEP2: go through all open trades by this strategy and try to exit to gain some money
-                        tradeService.getOpenTradesByStrategy(tradingStrategy.name()).forEach(trade ->
-                                exitStrategy.strategy().apply(trade.getId(), timeframe).ifPresent(closeTradeSignal ->
-                                        // close the trade with a new order
-                                        tradeService.closeTrade(currentPrice, trade))
-                        );
-
-                        // STEP3: open new trades based on the trading strategy
-                        tradingStrategy.strategy().apply(timeframe)
-                                .ifPresent(signal -> tradeService.openTrade(currentPrice, signal, tradingStrategy));
-                    }
+                try {
+                    algorithm.accept(timeframe, tickerPairResponse);
+                } catch (Exception e) {
+                    log.error(tradingStrategy.name() + e.getMessage(), e);
                 }
             }), 2, tradingStrategy.periodLength().getSeconds(), TimeUnit.SECONDS);
             log.info(tradingStrategy.name() + ": Trading session started! Looking for a good ticker to trade: " + tradeProperties.getAssetCode());
@@ -100,6 +86,44 @@ public class MoneyMakerApplication {
         if (enabledTradingStrategies.isEmpty()) {
             log.error("No trading strategies found enabled. You can enable strategies in the application.properties. See ya!");
         }
+    }
+
+    /**
+     * The algorithm to run when we want to decide what to do with our current trades or if we need to open a new trade.
+     * It's split in 3 steps:
+     * 1. Update all current trades with data from the api.
+     * 2. Try to close open trades with the specified exit strategy.
+     * 3. Try to open new trades with the specified entry strategy.
+     */
+    private static BiConsumer<Timeframe, TickerPairResponse> tradingAlgorithm(TradingStrategy tradingStrategy, ExitStrategy exitStrategy) {
+        return (timeframe, tickerPairResponse) -> {
+            BigDecimal currentPrice = tickerPairResponse.getResult().get(tradeProperties.getDetailAssetCode()).getCurrentPrice();
+            boolean isPriceChanged = timeframe.getTicks().isEmpty() || !timeframe.getTicks().getLast().getValue().equals(currentPrice);
+
+            // only run the strategy on price change. no point running it for the same price twice.
+            if (isPriceChanged) {
+                timeframe.addTick(currentPrice);
+
+                // only run when the timeframe we are interested in is full with prices.
+                if (timeframe.isFull()) {
+
+                    // STEP1: first update our pending orders. this will update our database with the current state of our pending orders.
+                    // if they have been executed it will change their status and enrich them with all the details of the fulfilled order.
+                    orderService.syncPendingOrders();
+
+                    // STEP2: go through all open trades by this strategy and try to exit to gain some money
+                    tradeService.getOpenTradesByStrategy(tradingStrategy.name()).forEach(trade ->
+                            exitStrategy.strategy().apply(trade.getId(), timeframe).ifPresent(closeTradeSignal ->
+                                    // close the trade with a new order
+                                    tradeService.closeTrade(currentPrice, trade))
+                    );
+
+                    // STEP3: open new trades based on the trading strategy
+                    tradingStrategy.strategy().apply(timeframe)
+                            .ifPresent(signal -> tradeService.openTrade(currentPrice, signal, tradingStrategy));
+                }
+            }
+        };
     }
 
     // Generates a time frame with the current history/data of the asset pair.
