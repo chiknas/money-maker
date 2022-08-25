@@ -80,7 +80,7 @@ public class TradeOrderEntity {
     private TradeEntity trade;
 
     public LocalDateTime getTime() {
-        return TimeService.getLocalDateTimeNano(String.valueOf(time));
+        return TimeService.getLocalDateTimeMilliSecond(time.longValue());
     }
 
     public void setTime(LocalDateTime time) {

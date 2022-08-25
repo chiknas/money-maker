@@ -28,4 +28,9 @@ public class TimeService {
     public static long getMilliSeconds(LocalDateTime dateTime) {
         return dateTime.atZone(ZoneId.of("UTC")).toInstant().toEpochMilli();
     }
+
+    public static LocalDateTime getLocalDateTimeMilliSecond(long milliSeconds) {
+        long seconds = milliSeconds / 1000;
+        return LocalDateTime.ofInstant(Instant.ofEpochSecond(seconds), ZoneId.of("UTC"));
+    }
 }

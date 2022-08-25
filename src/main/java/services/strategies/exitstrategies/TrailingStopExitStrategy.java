@@ -51,7 +51,10 @@ public class TrailingStopExitStrategy implements ExitStrategy {
                     )
             ));
             Tick previousTicker = timeframe.getTicks().getFirst();
-            Timeframe trailingStopValues = timeframe.getTicks().stream()
+            Timeframe trailingStopValues = timeframe.getTicks()
+                    .stream()
+                    // ignore values before the trade because it will alter the value of the trailing stop
+                    .filter(tick -> tick.getTime().isAfter(trade.getEntryOrder().getTime()))
                     .reduce(
                             // new timeframe to keep track of the trailing values
                             initialTrailingValuesTimeframe,
