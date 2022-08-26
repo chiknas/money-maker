@@ -9,6 +9,7 @@ import services.httpclients.kraken.postrequestobjects.addorder.AddOrderPostReque
 import services.httpclients.kraken.postrequestobjects.addorder.KrakenOrderDirection;
 import services.httpclients.kraken.postrequestobjects.addorder.KrakenOrderType;
 import services.httpclients.kraken.response.addorder.AddOrderResponse;
+import services.httpclients.kraken.response.balance.AccountBalanceResponse;
 import services.httpclients.kraken.response.balance.BalanceResponse;
 import services.httpclients.kraken.response.orderinfo.OrderInfoResponse;
 import services.httpclients.kraken.response.ticker.TickerPairResponse;
@@ -47,12 +48,21 @@ public class KrakenClient extends AbstractClient {
     }
 
     // https://docs.kraken.com/rest/#tag/User-Data/operation/getAccountBalance
-    public Optional<BalanceResponse> getBalance() {
+    public Optional<BalanceResponse> getAssetsBalance() {
         String path = "/0/private/Balance";
         String nonce = krakenAuthentication.getNonce();
         String data = "nonce=" + nonce;
         return postRequest(data, path, krakenAuthentication.getSecurityHeaders(path, nonce, data))
                 .flatMap(request -> super.send(request, BalanceResponse.class));
+    }
+
+    // https://docs.kraken.com/rest/#tag/User-Data/operation/getTradeBalance
+    public Optional<AccountBalanceResponse> getAccountBalance() {
+        String path = "/0/private/TradeBalance";
+        String nonce = krakenAuthentication.getNonce();
+        String data = "nonce=" + nonce + "&asset=ZGBP";
+        return postRequest(data, path, krakenAuthentication.getSecurityHeaders(path, nonce, data))
+                .flatMap(request -> super.send(request, AccountBalanceResponse.class));
     }
 
     // https://docs.kraken.com/rest/#tag/Market-Data/operation/getOHLCData

@@ -80,11 +80,9 @@ public class TradeService {
     public void openTrade(BigDecimal price, TradingStrategy.TradingSignal tradingSignal, TradingStrategy tradingStrategy) {
         int orderReference = generateTradeReference();
 
-        BigDecimal volume = client.getBalance().map(balanceResponse ->
-                        TradingStrategy.TradingSignal.BUY.equals(tradingSignal)
-                                ? getBuyCryptoVolume(balanceResponse, price)
-                                : getSellCryptoVolume(balanceResponse))
-                .orElseThrow(() -> new IllegalStateException("Api query to get account balances failed. Trade cancelled."));
+        BigDecimal volume = properties.usesLeverage()
+                ? getOpenTradeVolumeWithLeverage(price)
+                : getOpenTradeVolume(price, tradingSignal);
 
         // post the order
         client.postMarketOrder(orderReference, volume, tradingSignal)
@@ -120,6 +118,46 @@ public class TradeService {
     }
 
     /**
+     * It will calculate the amount/volume of coins to long/short based on the specified price, the account at risk percentage and
+     * the total account balance.
+     * ex. (accountAtRisk * totalAccountBalance) / currentPrice = volume
+     */
+    protected BigDecimal getOpenTradeVolumeWithLeverage(BigDecimal price) {
+        return client.getAccountBalance()
+                .map(accountBalanceResponse -> properties.getAccountRisk()
+                        .multiply(accountBalanceResponse.getAccountBalance().divide(price, 10, RoundingMode.HALF_EVEN)))
+                .orElseThrow(() -> new IllegalStateException("Api query to get account balances failed. Trade cancelled."));
+    }
+
+    protected BigDecimal getOpenTradeVolume(BigDecimal price, TradingStrategy.TradingSignal tradingSignal) {
+        return client.getAssetsBalance().map(balanceResponse ->
+                        TradingStrategy.TradingSignal.BUY.equals(tradingSignal)
+                                ? getBuyCryptoVolume(balanceResponse, price)
+                                : getSellCryptoVolume(balanceResponse))
+                .orElseThrow(() -> new IllegalStateException("Api query to get account balances failed. Trade cancelled."));
+    }
+
+    /**
+     * Calculates the amount/volume of crypto to buy using cash. The calculation is based on the capital at risk percentage.
+     * Cash is first transformed to the volume of crypto based on the current price.
+     */
+    protected BigDecimal getBuyCryptoVolume(BalanceResponse balanceResponse, BigDecimal price) {
+        String assetCode = properties.getBuyAssetCode();
+        BigDecimal cashBalance = balanceResponse.getResult().getAssetBalance(assetCode);
+        BigDecimal assetBalance = cashBalance.divide(price, 10, RoundingMode.HALF_EVEN);
+        return properties.getAccountRisk().multiply(assetBalance);
+    }
+
+    /**
+     * Calculates the amount/volume of crypto to sell based on the capital at risk config.
+     */
+    protected BigDecimal getSellCryptoVolume(BalanceResponse balanceResponse) {
+        String assetCode = properties.getSellAssetCode();
+        BigDecimal assetBalance = balanceResponse.getResult().getAssetBalance(assetCode);
+        return properties.getAccountRisk().multiply(assetBalance);
+    }
+
+    /**
      * Will post an order to complete the trade and hopefully make some money.
      * It will try to sell/buy the same volume of coin we sold/bought when we entered this trade.
      */
@@ -132,13 +170,14 @@ public class TradeService {
 
         // since we are closing a trade we want to exit with the same amount we entered if possible.
         // other trades might have changed the available cash/coins so check if we have the exec volume in our balance before we send the order.
-        BigDecimal volumeBalance = client.getBalance().map(balanceResponse ->
+        BigDecimal volumeBalance = client.getAssetsBalance().map(balanceResponse ->
                         TradingStrategy.TradingSignal.BUY.equals(tradingSignal)
                                 ? balanceResponse.getResult().getAssetBalance(properties.getBuyAssetCode()).divide(price, 10, RoundingMode.HALF_EVEN)
                                 : balanceResponse.getResult().getAssetBalance(properties.getSellAssetCode()))
                 .orElseThrow(() -> new IllegalStateException("Api query to get account balances failed. Trade cancelled."));
         BigDecimal volumeExec = trade.getEntryOrder().getVolumeExec();
-        BigDecimal volume = volumeExec.compareTo(volumeBalance) > 0 ? volumeBalance : volumeExec;
+        // if we use leverage we always want to close a trade with the entry order executed volume
+        BigDecimal volume = !properties.usesLeverage() && volumeExec.compareTo(volumeBalance) > 0 ? volumeBalance : volumeExec;
 
         client.postMarketOrder(orderReference, volume, tradingSignal)
                 .ifPresentOrElse(
@@ -165,25 +204,5 @@ public class TradeService {
                                 }, () -> log.error("Order transaction id was not returned by the api which means the order was not successful.")),
                         () -> log.error("Trade was not closed because the api request was not successful.")
                 );
-    }
-
-    /**
-     * Calculates the amount/volume of crypto to buy using cash. The calculation is based on the capital at risk percentage.
-     * Cash is first transformed to the volume of crypto based on the current price.
-     */
-    protected BigDecimal getBuyCryptoVolume(BalanceResponse balanceResponse, BigDecimal price) {
-        String assetCode = properties.getBuyAssetCode();
-        BigDecimal cashBalance = balanceResponse.getResult().getAssetBalance(assetCode);
-        BigDecimal assetBalance = cashBalance.divide(price, 10, RoundingMode.HALF_EVEN);
-        return properties.getAccountRisk().multiply(assetBalance);
-    }
-
-    /**
-     * Calculates the amount/volume of crypto to sell based on the capital at risk config.
-     */
-    protected BigDecimal getSellCryptoVolume(BalanceResponse balanceResponse) {
-        String assetCode = properties.getSellAssetCode();
-        BigDecimal assetBalance = balanceResponse.getResult().getAssetBalance(assetCode);
-        return properties.getAccountRisk().multiply(assetBalance);
     }
 }

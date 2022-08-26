@@ -11,6 +11,7 @@ import org.mockito.Mock;
 import properties.PropertiesService;
 import properties.TradeProperties;
 import services.httpclients.kraken.KrakenClient;
+import services.httpclients.kraken.response.balance.AccountBalanceResponse;
 import services.httpclients.kraken.response.balance.BalanceResponse;
 import services.httpclients.kraken.response.balance.BalanceResult;
 
@@ -42,8 +43,12 @@ class TradeServiceTest {
 
         BigDecimal capitalAtRisk = new BigDecimal("0.2");
         TradeProperties tradeProperties = new TradeProperties("XBTGBP", "XXBTZGBP",
-                "ZGBP", "XXBT", capitalAtRisk, false, "1:1");
+                "ZGBP", "XXBT", capitalAtRisk, false, "2:1");
         when(propertiesService.loadProperties(eq(TradeProperties.class))).thenReturn(Optional.of(tradeProperties));
+
+        AccountBalanceResponse accountBalanceResponse = mock(AccountBalanceResponse.class);
+        when(accountBalanceResponse.getAccountBalance()).thenReturn(BigDecimal.TEN);
+        when(client.getAccountBalance()).thenReturn(Optional.of(accountBalanceResponse));
 
         tradeService = new TradeService(tradeDao, client, propertiesService);
     }
@@ -116,6 +121,16 @@ class TradeServiceTest {
         // there no exit order so the trade is still open. profit should be empty
         Optional<BigDecimal> profit = tradeService.calculateTradeProfit(trade);
         assertTrue(profit.isEmpty());
+    }
+
+    @Test
+    void getOpenTradeVolumeWithLeverage() {
+        BigDecimal openTradeVolumeWithLeverage = tradeService.getOpenTradeVolumeWithLeverage(new BigDecimal("20000"));
+
+        // since we got leverage we care about the total account balance (10 pounds). We will only risk
+        // 2 pounds because the account at risk property is set to 20%.
+        // At a price of 20000 each coin we should buy 2 / 20000 = 0.0001 coins
+        assertEquals(new BigDecimal("0.0001"), openTradeVolumeWithLeverage.stripTrailingZeros());
     }
 
     @Test
