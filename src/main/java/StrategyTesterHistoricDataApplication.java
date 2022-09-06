@@ -4,6 +4,7 @@ import database.DatabaseModule;
 import database.entities.TradeEntity;
 import database.entities.TradeOrderEntity;
 import database.entities.TradeOrderStatus;
+import database.entities.TradeOrderType;
 import lombok.extern.slf4j.Slf4j;
 import services.TimeService;
 import services.httpclients.HttpClientModule;
@@ -90,11 +91,13 @@ public class StrategyTesterHistoricDataApplication {
 
                             TradeOrderEntity exitOrder = new TradeOrderEntity();
                             exitOrder.setOrderReference(1234);
+                            exitOrder.setOrderTransaction("qwe");
+                            exitOrder.setType(TradeOrderType.EXIT);
                             exitOrder.setTradingSignal(closeTradeSignal);
                             exitOrder.setPrice(currentTick.getValue());
                             exitOrder.setVolume(BigDecimal.TEN);
                             exitOrder.setTime(currentTick.getTime());
-                            exitOrder.setStatus(TradeOrderStatus.PENDING);
+                            exitOrder.setStatus(TradeOrderStatus.EXECUTED);
                             exitOrder.setAssetCode(assetCode);
                             exitOrder.setCost(BigDecimal.ZERO);
 
@@ -117,9 +120,11 @@ public class StrategyTesterHistoricDataApplication {
 
                                 TradeOrderEntity entryOrder = new TradeOrderEntity();
                                 entryOrder.setOrderReference(1234);
+                                entryOrder.setOrderTransaction("qwe");
+                                entryOrder.setType(TradeOrderType.ENTRY);
                                 entryOrder.setTradingSignal(signal);
                                 entryOrder.setPrice(currentTick.getValue());
-                                entryOrder.setStatus(TradeOrderStatus.PENDING);
+                                entryOrder.setStatus(TradeOrderStatus.EXECUTED);
                                 entryOrder.setVolume(BigDecimal.TEN);
                                 entryOrder.setTime(currentTick.getTime());
                                 entryOrder.setAssetCode(assetCode);
